@@ -7,15 +7,20 @@ import (
 )
 
 type versionSummary struct {
-    Commit       string
-    Version      string
+    Commit       string `json:"commit"`
+    Version      string `json:"version"`
 }
 
-func Status(w http.ResponseWriter, r *http.Request) {
+func RegisterSystem() {
+    http.HandleFunc("/_status", systemStatus)
+    http.HandleFunc("/_version", systemVersion)
+}
+
+func systemStatus(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Healthy")
 }
 
-func Version(w http.ResponseWriter, r *http.Request) {
+func systemVersion(w http.ResponseWriter, r *http.Request) {
     ver := versionSummary{Commit: gitcommit, Version: gitversion}
     out, err := json.Marshal(ver)
     if err != nil {

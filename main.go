@@ -10,8 +10,8 @@ import (
 func main() {
     fmt.Println("Running main")
     http.HandleFunc("/", repoHandler)
-    http.HandleFunc("/_status", handlers.Status)
-    http.HandleFunc("/_version", handlers.Version)
+    handlers.RegisterSystem()
+    handlers.RegisterSower()
     log.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
 }
 
