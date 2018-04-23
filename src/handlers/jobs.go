@@ -6,6 +6,7 @@ import (
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     k8sv1 "k8s.io/api/core/v1"
     batchv1 "k8s.io/api/batch/v1"
+    batchtypev1 "k8s.io/client-go/kubernetes/typed/batch/v1"
     "k8s.io/client-go/rest"
 )
 
@@ -14,27 +15,97 @@ var (
 	falseVal   = false
 )
 
-func createK8sJob() {
-        // creates the in-cluster config
-	config, err := rest.InClusterConfig()
+type JobsArray struct {
+    JobInfo []JobInfo `json:"jobs"`
+}
+
+type JobInfo struct {
+    UID string `json:"uid"`
+    Name string `json:"name"`
+    Status string `json:"status"`
+}
+
+func getJobClient() batchtypev1.JobInterface {
+    // creates the in-cluster config
+    config, err := rest.InClusterConfig()
+    if err != nil {
+            panic(err.Error())
+    }
+    // creates the clientset
+    clientset, err := kubernetes.NewForConfig(config)
+    // Access jobs. We can't do it all in one line, since we need to receive the
+    // errors and manage thgem appropriately
+    batchClient := clientset.BatchV1()
+    jobsClient := batchClient.Jobs("default")
+    return jobsClient
+}
+
+func getJobByID(jc batchtypev1.JobInterface, jobid string) (*batchv1.Job, error) {
+	jobs, err := jc.List(metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	// Access jobs. We can't do it all in one line, since we need to receive the
-	// errors and manage thgem appropriately
-	batchClient := clientset.BatchV1()
-	jobsClient := batchClient.Jobs("default")
-	//piJob, err := jobsClient.Get("pi")
-	//fmt.Printf("piJob Name: %v\n", piJob.Name)
-
-	jobsList, err := jobsClient.List(metav1.ListOptions{})
-
-	// Loop over all jobs and print their name
-	for i, job := range jobsList.Items {
-		fmt.Printf("Job %d: %s\n", i, job.Name)
+	for _, job := range jobs.Items {
+		if jobid == string(job.GetUID()) {
+			return &job, nil
+		}
 	}
+	return nil, fmt.Errorf("job with jobid %s not found", jobid)
+}
+
+func getJobStatusByID(jobid string) (*JobInfo, error) {
+    job, err := getJobByID(getJobClient(), jobid)
+    if err != nil {
+        return nil, err
+    }
+    ji := JobInfo{}
+    ji.Name = job.Name
+    ji.UID = string(job.GetUID())
+    ji.Status = jobStatusToString(&job.Status)
+    return &ji, nil
+}
+
+func listJobs(jc batchtypev1.JobInterface) JobsArray {
+    jobs := JobsArray{}
+
+    jobsList, err := jc.List(metav1.ListOptions{})
+
+    if err != nil {
+        return jobs
+    }
+
+    for _, job := range jobsList.Items {
+        ji := JobInfo{}
+        ji.Name = job.Name
+        ji.UID = string(job.GetUID())
+        ji.Status = jobStatusToString(&job.Status)
+        jobs.JobInfo = append(jobs.JobInfo, ji)
+    }
+
+    return jobs
+}
+
+func jobStatusToString(status *batchv1.JobStatus) string {
+    if status == nil {
+        return "Unknown"
+    }
+
+    // https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+    if status.Succeeded >= 1 {
+        return "Completed"
+    }
+    if status.Failed >= 1 {
+        return "Failed"
+    }
+    if status.Active >= 1 {
+        return "Running"
+    }
+    return "Unknown"
+}
+
+
+func createK8sJob() (string, error) {
+	jobsClient := getJobClient()
 
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
@@ -62,7 +133,7 @@ func createK8sJob() {
 					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
 					Containers: []k8sv1.Container{
 						{
-							Name:    "k8sexp-testimg",
+							Name:    "job-task",
 							Image:   "perl",
 							Command: []string{"sleep", "10"},
 							SecurityContext: &k8sv1.SecurityContext{
@@ -83,6 +154,9 @@ func createK8sJob() {
 	}
 
 	newJob, err := jobsClient.Create(batchJob)
-
-	fmt.Println("New job name: ", newJob.Name)
+        if err != nil {
+            return "", err
+        }
+        fmt.Println("New job name: ", newJob.Name) 
+        return string(newJob.GetUID()), nil
 }

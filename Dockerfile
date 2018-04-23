@@ -1,14 +1,7 @@
 FROM golang:1.10 as build-deps
 
-COPY . /sower
 WORKDIR /sower
 ENV GOPATH=/sower
-
-# Populate git version info into the code
-RUN echo "package handlers\n\nconst (" >src/handlers/gitversion.go \
-    && COMMIT=`git rev-parse HEAD` && echo "    gitcommit=\"${COMMIT}\"" >>src/handlers/gitversion.go \
-    && VERSION=`git describe --always --tags` && echo "    gitversion=\"${VERSION}\"" >>src/handlers/gitversion.go \
-    && echo ")" >>src/handlers/gitversion.go
 
 RUN go get -tags k8s.io/client-go/kubernetes \
     k8s.io/apimachinery/pkg/apis/meta/v1 \
@@ -16,6 +9,14 @@ RUN go get -tags k8s.io/client-go/kubernetes \
     k8s.io/api/batch/v1 \
     k8s.io/client-go/tools/clientcmd \
     k8s.io/client-go/rest
+
+COPY . /sower
+
+# Populate git version info into the code
+RUN echo "package handlers\n\nconst (" >src/handlers/gitversion.go \
+    && COMMIT=`git rev-parse HEAD` && echo "    gitcommit=\"${COMMIT}\"" >>src/handlers/gitversion.go \
+    && VERSION=`git describe --always --tags` && echo "    gitversion=\"${VERSION}\"" >>src/handlers/gitversion.go \
+    && echo ")" >>src/handlers/gitversion.go
 
 RUN go build -ldflags "-linkmode external -extldflags -static"
 
