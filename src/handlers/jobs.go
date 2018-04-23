@@ -1,6 +1,8 @@
 package handlers
 
 import (
+    "crypto/rand"
+    "encoding/base64"
     "fmt"
     "k8s.io/client-go/kubernetes"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,59 +106,82 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 }
 
 
-func createK8sJob() (string, error) {
-	jobsClient := getJobClient()
+func createK8sJob(inputURL string, outputURL string) (*JobInfo, error) {
+    jobsClient := getJobClient()
+    randname, _ := GetRandString(5)
+    name := fmt.Sprintf("simu-%s", randname)
 
-	// For an example of how to create jobs, see this file:
-	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-	batchJob := &batchv1.Job{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Job",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "k8sexp-testjob",
-			Labels: make(map[string]string),
-		},
-		Spec: batchv1.JobSpec{
-			// Optional: Parallelism:,
-			// Optional: Completions:,
-			// Optional: ActiveDeadlineSeconds:,
-			// Optional: Selector:,
-			// Optional: ManualSelector:,
-			Template: k8sv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   "k8sexp-testpod",
-					Labels: make(map[string]string),
-				},
-				Spec: k8sv1.PodSpec{
-					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
-					Containers: []k8sv1.Container{
-						{
-							Name:    "job-task",
-							Image:   "perl",
-							Command: []string{"sleep", "10"},
-							SecurityContext: &k8sv1.SecurityContext{
-								Privileged: &falseVal,
-							},
-							ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullIfNotPresent),
-							Env:             []k8sv1.EnvVar{},
-							VolumeMounts:    []k8sv1.VolumeMount{},
+    // For an example of how to create jobs, see this file:
+    // https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
+    batchJob := &batchv1.Job{
+        TypeMeta: metav1.TypeMeta{
+            Kind:       "Job",
+            APIVersion: "v1",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+	    Name:    name,
+            Labels: make(map[string]string),
+	},
+	Spec: batchv1.JobSpec{
+		// Optional: Parallelism:,
+		// Optional: Completions:,
+		// Optional: ActiveDeadlineSeconds:,
+		// Optional: Selector:,
+		// Optional: ManualSelector:,
+		Template: k8sv1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   name,
+				Labels: make(map[string]string),
+			},
+			Spec: k8sv1.PodSpec{
+				InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
+				Containers: []k8sv1.Container{
+					{
+						Name:    "job-task",
+						Image:   "quay.io/cdis/simu_demo:latest",
+						SecurityContext: &k8sv1.SecurityContext{
+							Privileged: &falseVal,
 						},
+						ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullIfNotPresent),
+						Env:             []k8sv1.EnvVar{
+							{
+								Name:  "INPUT_URL",
+								Value: inputURL,
+							},
+                                                        {
+                                                                Name:  "OUTPUT_URL",
+                                                                Value: outputURL,
+                                                        },
+						},
+						VolumeMounts:    []k8sv1.VolumeMount{},
 					},
-					RestartPolicy:    "Never",
-					Volumes:          []k8sv1.Volume{},
-					ImagePullSecrets: []k8sv1.LocalObjectReference{},
 				},
+				RestartPolicy:    "Never",
+				Volumes:          []k8sv1.Volume{},
+				ImagePullSecrets: []k8sv1.LocalObjectReference{},
 			},
 		},
-		// Optional, not used by pach: JobStatus:,
-	}
+	},
+	// Optional, not used by pach: JobStatus:,
+    }
 
-	newJob, err := jobsClient.Create(batchJob)
-        if err != nil {
-            return "", err
-        }
-        fmt.Println("New job name: ", newJob.Name) 
-        return string(newJob.GetUID()), nil
+    newJob, err := jobsClient.Create(batchJob)
+    if err != nil {
+        return nil, err
+    }
+    fmt.Println("New job name: ", newJob.Name) 
+    ji := JobInfo{}
+    ji.Name = newJob.Name
+    ji.UID = string(newJob.GetUID())
+    ji.Status = jobStatusToString(&newJob.Status)
+    return &ji, nil
+}
+
+// GetRandString returns a random string of lenght N
+func GetRandString(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }

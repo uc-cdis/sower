@@ -6,6 +6,11 @@ import (
     "net/http"
 )
 
+type postData struct {
+    inputURL string
+    outputURL string
+}
+
 func RegisterSower() {
     http.HandleFunc("/dispatch", dispatch)
     http.HandleFunc("/status", status)
@@ -13,16 +18,30 @@ func RegisterSower() {
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request) {
-    /*if (r.Method != "POST") {
+    if (r.Method != "POST") {
        http.Error(w, "Not Found", 404)
        return
-    }*/
-    result, err := createK8sJob()
+    }
+    decoder := json.NewDecoder(r.Body)
+
+    var data postData
+    err := decoder.Decode(&data)
     if err != nil {
-        http.Error(w, result, 500)
+       http.Error(w, "Failed to decode JSON", 400)
+       return
+    }
+    result, err := createK8sJob(data.inputURL, data.outputURL)
+    if err != nil {
+        http.Error(w, err.Error(), 500)
         return
     }
-    fmt.Fprintf(w, result)
+    out, err := json.Marshal(result)
+    if err != nil {
+        http.Error(w, err.Error(), 500)
+        return
+    }
+
+    fmt.Fprintf(w, string(out))
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
