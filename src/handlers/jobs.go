@@ -111,6 +111,8 @@ func createK8sJob(inputURL string, outputURL string) (*JobInfo, error) {
 	jobsClient := getJobClient()
 	randname, _ := GetRandString(5)
 	name := fmt.Sprintf("simu-%s", randname)
+	fmt.Println("job input URL: ", inputURL)
+	fmt.Println("job output URL: ", outputURL)
 
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
