@@ -7,8 +7,8 @@ import (
 )
 
 type postData struct {
-	inputURL  string
-	outputURL string
+	InputURL  string `json:"inputURL"`
+	OutputURL string `json:"outputURL"`
 }
 
 func RegisterSower() {
@@ -31,9 +31,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to decode JSON", 400)
 		return
 	}
-	fmt.Println("input URL: ", data.inputURL)
-	fmt.Println("output URL: ", data.outputURL)
-	result, err := createK8sJob(data.inputURL, data.outputURL)
+	fmt.Println("input URL: ", data.InputURL)
+	fmt.Println("output URL: ", data.OutputURL)
+	result, err := createK8sJob(data.InputURL, data.OutputURL)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
