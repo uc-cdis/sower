@@ -113,7 +113,7 @@ func createK8sJob(inputURL string, outputURL string) (*JobInfo, error) {
 	name := fmt.Sprintf("simu-%s", randname)
 	fmt.Println("job input URL: ", inputURL)
 	fmt.Println("job output URL: ", outputURL)
-
+        var deadline int64 = 600
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -131,6 +131,7 @@ func createK8sJob(inputURL string, outputURL string) (*JobInfo, error) {
 			// Optional: ActiveDeadlineSeconds:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
+                        ActiveDeadlineSeconds: &deadline,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   name,
@@ -159,7 +160,7 @@ func createK8sJob(inputURL string, outputURL string) (*JobInfo, error) {
 							VolumeMounts: []k8sv1.VolumeMount{},
 						},
 					},
-					RestartPolicy:    "Never",
+					RestartPolicy:    k8sv1.RestartPolicyNever,
 					Volumes:          []k8sv1.Volume{},
 					ImagePullSecrets: []k8sv1.LocalObjectReference{},
 				},
