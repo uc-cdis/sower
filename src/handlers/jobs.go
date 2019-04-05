@@ -121,7 +121,8 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 	randname, _ := GetRandString(5)
 	name := fmt.Sprintf("simu-%s", randname)
 	fmt.Println("input data: ", inputData)
-	var deadline int64 = 600
+	var deadline int64 = 300
+	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
 	// For an example of how to create jobs, see this file:
@@ -141,6 +142,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 			// Optional: ActiveDeadlineSeconds:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
+			BackoffLimit: &backoff,
 			ActiveDeadlineSeconds: &deadline,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
