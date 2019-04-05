@@ -32,7 +32,7 @@ type JobInfo struct {
 }
 
 type JobOutput struct {
-	Output   string `json:"output"`
+	Output string `json:"output"`
 }
 
 func getJobClient() batchtypev1.JobInterface {
@@ -221,7 +221,7 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	if pod == nil {
 		return nil, fmt.Errorf("Pod not found")
 	}
-    
+
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -230,20 +230,20 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	podLogOptions := k8sv1.PodLogOptions{}
-    req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
-    podLogs, err := req.Stream()
-    if err != nil {
-        return nil, fmt.Errorf("Error opening stream")
-    }
-    defer podLogs.Close()
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
+	podLogs, err := req.Stream()
+	if err != nil {
+		return nil, err
+	}
+	defer podLogs.Close()
 
-    buf := new(bytes.Buffer)
-    _, err = io.Copy(buf, podLogs)
-    if err != nil {
-        return nil, fmt.Errorf("Error copying output")
-    }
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		return nil, fmt.Errorf("Error copying output")
+	}
 	str := buf.String()
-	
+
 	ji := JobOutput{}
 	ji.Output = str
 	return &ji, nil
