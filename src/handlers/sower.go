@@ -3,13 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 )
-
-type postData struct {
-	InputURL  string `json:"inputURL"`
-	OutputURL string `json:"outputURL"`
-}
 
 func RegisterSower() {
 	http.HandleFunc("/dispatch", dispatch)
@@ -22,18 +19,17 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", 404)
 		return
 	}
-	decoder := json.NewDecoder(r.Body)
-	fmt.Println(r.Body)
+	accessToken := getBearerToken(r)
 
-	var data postData
-	err := decoder.Decode(&data)
+	inputData, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil {
-		http.Error(w, "Failed to decode JSON", 400)
+		http.Error(w, err.Error(), 500)
 		return
 	}
-	fmt.Println("input URL: ", data.InputURL)
-	fmt.Println("output URL: ", data.OutputURL)
-	result, err := createK8sJob(data.InputURL, data.OutputURL)
+
+	result, err := createK8sJob(string(inputData), *accessToken)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -79,4 +75,16 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, string(out))
+}
+
+func getBearerToken(r *http.Request) *string {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return nil
+	}
+	s := strings.SplitN(authHeader, " ", 2)
+	if len(s) == 2 && strings.ToLower(s[0]) == "bearer" {
+		return &s[1]
+	}
+	return nil
 }
