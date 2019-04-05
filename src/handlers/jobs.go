@@ -152,7 +152,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 					Containers: []k8sv1.Container{
 						{
 							Name:  "job-task",
-							Image: "quay.io/cdis/simu_demo:latest",
+							Image: "quay.io/cdis/mickey-demo:latest",
 							SecurityContext: &k8sv1.SecurityContext{
 								Privileged: &falseVal,
 							},
@@ -213,9 +213,9 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	//if job.Labels["app"] != "sowerjob" {
-	//	return nil, fmt.Errorf("job with jobid %s not found", jobid)
-	//}
+	if job.Labels["app"] != "sowerjob" {
+		return nil, fmt.Errorf("job with jobid %s not found", jobid)
+	}
 
 	pod := getPodMatchingJob(job.Name)
 	if pod == nil {
