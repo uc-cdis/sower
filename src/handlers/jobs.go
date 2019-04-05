@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"bytes"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"io"
+	"math/rand"
 	"strings"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
@@ -104,27 +104,29 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	}
 
 	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+	if status.Active >= 1 {
+		return "Running"
+	}
 	if status.Succeeded >= 1 {
 		return "Completed"
 	}
 	if status.Failed >= 1 {
 		return "Failed"
 	}
-	if status.Active >= 1 {
-		return "Running"
-	}
 	return "Unknown"
 }
 
-func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
+func createK8sJob(inputData string, accessToken string, userName string) (*JobInfo, error) {
 	jobsClient := getJobClient()
-	randname, _ := GetRandString(5)
+	randname := GetRandString(5)
 	name := fmt.Sprintf("simu-%s", randname)
 	fmt.Println("input data: ", inputData)
 	var deadline int64 = 300
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
+	annotations := make(map[string]string)
+	annotations["gen3username"] = userName
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -133,8 +135,9 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
+			Name:        name,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: batchv1.JobSpec{
 			// Optional: Parallelism:,
@@ -253,10 +256,44 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 }
 
 // GetRandString returns a random string of lenght N
-func GetRandString(n int) (string, error) {
+func GetRandString(n int) string {
+	letterBytes := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-	return strings.ToLower(base64.RawURLEncoding.EncodeToString(b)), nil
+	return string(b)
+}
+
+func StartMonitoringProcess() {
+	jc := getJobClient()
+	deleteOption := metav1.NewDeleteOptions(120)
+	for {
+		jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
+
+		if err != nil {
+			fmt.Println("Monitoring error: ", err)
+			time.Sleep(30 * time.Second)
+			continue
+		}
+
+		for _, job := range jobsList.Items {
+			k8sJob, err := getJobStatusByID(string(job.GetUID()))
+			if err != nil {
+				fmt.Println("Can't get job status by UID: ", job.Name, err)
+			} else {
+				if k8sJob.Status == "Unknown" || k8sJob.Status == "Running" {
+					continue
+				} else {
+					fmt.Println("Deleting old job: ", job.Name)
+					if err = jc.Delete(job.Name, deleteOption); err != nil {
+						fmt.Println("Error deleting job : ", job.Name, err)
+					}
+				}
+			}
+
+		}
+
+		time.Sleep(30 * time.Second)
+	}
 }

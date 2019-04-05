@@ -30,9 +30,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
+	userName := r.Header.Get("REMOTE_USER")
 
-	result, err := createK8sJob(string(inputData), *accessToken)
+	result, err := createK8sJob(string(inputData), *accessToken, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
