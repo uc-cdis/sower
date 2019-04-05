@@ -30,6 +30,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	
+
 	result, err := createK8sJob(string(inputData), *accessToken)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -102,6 +104,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 
 func getBearerToken(r *http.Request) *string {
 	authHeader := r.Header.Get("Authorization")
+	fmt.Println("header: ", authHeader)
 	if authHeader == "" {
 		return nil
 	}

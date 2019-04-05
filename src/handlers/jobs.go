@@ -142,7 +142,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 			// Optional: ActiveDeadlineSeconds:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
-			BackoffLimit: &backoff,
+			BackoffLimit:          &backoff,
 			ActiveDeadlineSeconds: &deadline,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -158,7 +158,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 							SecurityContext: &k8sv1.SecurityContext{
 								Privileged: &falseVal,
 							},
-							ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullIfNotPresent),
+							ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullAlways),
 							Env: []k8sv1.EnvVar{
 								{
 									Name:  "INPUT_DATA",
