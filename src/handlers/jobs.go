@@ -145,7 +145,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   name,
-					Labels: make(map[string]string),
+					Labels: labels,
 				},
 				Spec: k8sv1.PodSpec{
 					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
