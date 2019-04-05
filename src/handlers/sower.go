@@ -12,6 +12,7 @@ func RegisterSower() {
 	http.HandleFunc("/dispatch", dispatch)
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/list", list)
+	http.HandleFunc("/output", output)
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +48,28 @@ func status(w http.ResponseWriter, r *http.Request) {
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
 		result, errUID := getJobStatusByID(UID)
+		if errUID != nil {
+			http.Error(w, errUID.Error(), 500)
+			return
+		}
+
+		out, err := json.Marshal(result)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprintf(w, string(out))
+	} else {
+		http.Error(w, "Missing UID argument", 300)
+		return
+	}
+}
+
+func output(w http.ResponseWriter, r *http.Request) {
+	UID := r.URL.Query().Get("UID")
+	if UID != "" {
+		result, errUID := getJobLogs(UID)
 		if errUID != nil {
 			http.Error(w, errUID.Error(), 500)
 			return

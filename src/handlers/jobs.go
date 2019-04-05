@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -27,6 +29,10 @@ type JobInfo struct {
 	UID    string `json:"uid"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
+}
+
+type JobOutput struct {
+	Output   string `json:"output"`
 }
 
 func getJobClient() batchtypev1.JobInterface {
@@ -62,6 +68,9 @@ func getJobStatusByID(jobid string) (*JobInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	if job.Labels["app"] != "sowerjob" {
+		return nil, fmt.Errorf("job with jobid %s not found", jobid)
+	}
 	ji := JobInfo{}
 	ji.Name = job.Name
 	ji.UID = string(job.GetUID())
@@ -72,7 +81,7 @@ func getJobStatusByID(jobid string) (*JobInfo, error) {
 func listJobs(jc batchtypev1.JobInterface) JobsArray {
 	jobs := JobsArray{}
 
-	jobsList, err := jc.List(metav1.ListOptions{})
+	jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
 
 	if err != nil {
 		return jobs
@@ -112,7 +121,9 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 	randname, _ := GetRandString(5)
 	name := fmt.Sprintf("simu-%s", randname)
 	fmt.Println("input data: ", inputData)
-        var deadline int64 = 600
+	var deadline int64 = 600
+	labels := make(map[string]string)
+	labels["app"] = "sowerjob"
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -122,7 +133,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
-			Labels: make(map[string]string),
+			Labels: labels,
 		},
 		Spec: batchv1.JobSpec{
 			// Optional: Parallelism:,
@@ -130,7 +141,7 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 			// Optional: ActiveDeadlineSeconds:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
-            ActiveDeadlineSeconds: &deadline,
+			ActiveDeadlineSeconds: &deadline,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   name,
@@ -178,6 +189,65 @@ func createK8sJob(inputData string, accessToken string) (*JobInfo, error) {
 	ji.UID = string(newJob.GetUID())
 	ji.Status = jobStatusToString(&newJob.Status)
 	return &ji, nil
+}
+
+func getPodMatchingJob(jobname string) *k8sv1.Pod {
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Name, jobname) {
+			return &pod
+		}
+	}
+	return nil
+}
+
+func getJobLogs(jobid string) (*JobOutput, error) {
+	job, err := getJobByID(getJobClient(), jobid)
+	if err != nil {
+		return nil, err
+	}
+	//if job.Labels["app"] != "sowerjob" {
+	//	return nil, fmt.Errorf("job with jobid %s not found", jobid)
+	//}
+
+	pod := getPodMatchingJob(job.Name)
+	if pod == nil {
+		return nil, fmt.Errorf("Pod not found")
+	}
+    
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	podLogOptions := k8sv1.PodLogOptions{}
+    req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
+    podLogs, err := req.Stream()
+    if err != nil {
+        return nil, fmt.Errorf("Error opening stream")
+    }
+    defer podLogs.Close()
+
+    buf := new(bytes.Buffer)
+    _, err = io.Copy(buf, podLogs)
+    if err != nil {
+        return nil, fmt.Errorf("Error copying output")
+    }
+	str := buf.String()
+	
+	ji := JobOutput{}
+	ji.Output = str
+	return &ji, nil
+
 }
 
 // GetRandString returns a random string of lenght N
