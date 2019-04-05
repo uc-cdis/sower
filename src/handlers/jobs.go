@@ -265,9 +265,16 @@ func GetRandString(n int) string {
 	return string(b)
 }
 
+func jobOlderThan(status *batchv1.JobStatus, cutoffSeconds int32) bool {
+	then := time.Now().Add(time.Duration(-cutoffSeconds) * time.Second)
+	return status.StartTime.Time.Before(then)
+}
+
 func StartMonitoringProcess() {
 	jc := getJobClient()
 	deleteOption := metav1.NewDeleteOptions(120)
+	var deletionPropagation metav1.DeletionPropagation = "Background"
+	deleteOption.PropagationPolicy = &deletionPropagation
 	for {
 		jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
 
@@ -285,9 +292,11 @@ func StartMonitoringProcess() {
 				if k8sJob.Status == "Unknown" || k8sJob.Status == "Running" {
 					continue
 				} else {
-					fmt.Println("Deleting old job: ", job.Name)
-					if err = jc.Delete(job.Name, deleteOption); err != nil {
-						fmt.Println("Error deleting job : ", job.Name, err)
+					if jobOlderThan(&job.Status, 1800) {
+						fmt.Println("Deleting old job: ", job.Name)
+						if err = jc.Delete(job.Name, deleteOption); err != nil {
+							fmt.Println("Error deleting job : ", job.Name, err)
+						}
 					}
 				}
 			}
