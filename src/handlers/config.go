@@ -20,6 +20,6 @@ type SowerConfig struct {
 func loadConfig(config string) SowerConfig {
 	plan, _ := ioutil.ReadFile(config)
 	var data SowerConfig
-	err := json.Unmarshal(plan, &data)
+	_ = json.Unmarshal(plan, &data)
 	return data
 }
