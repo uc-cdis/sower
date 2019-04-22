@@ -131,7 +131,7 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
 
-	var conf = loadConfig("/sower/sower_config.json")
+	var conf = loadConfig("/sower_config.json")
 	fmt.Println("config: ", conf)
 
 	// For an example of how to create jobs, see this file:
