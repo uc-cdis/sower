@@ -141,7 +141,6 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	}
 
 	var restartPolicies = map[string]k8sv1.RestartPolicy{
-		"always":     k8sv1.RestartPolicyAlways,
 		"on_failure": k8sv1.RestartPolicyOnFailure,
 		"never":      k8sv1.RestartPolicyNever,
 	}
