@@ -134,6 +134,21 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	var conf = loadConfig("/sower_config.json")
 	fmt.Println("config: ", conf)
 
+	var pullPolicies = map[string]k8sv1.PullPolicy{
+		"always":         k8sv1.PullAlways,
+		"if_not_present": k8sv1.PullIfNotPresent,
+		"never":          k8sv1.PullNever,
+	}
+
+	var restartPolicies = map[string]k8sv1.RestartPolicy{
+		"always":     k8sv1.RestartPolicyAlways,
+		"on_failure": k8sv1.RestartPolicyOnFailure,
+		"never":      k8sv1.RestartPolicyNever,
+	}
+
+	var pullPolicy = k8sv1.PullPolicy(pullPolicies[conf.Container.PullPolicy])
+	var restartPolicy = restartPolicies[conf.RestartPolicy]
+
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -168,7 +183,7 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 							SecurityContext: &k8sv1.SecurityContext{
 								Privileged: &falseVal,
 							},
-							ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullAlways),
+							ImagePullPolicy: pullPolicy,
 							Env: []k8sv1.EnvVar{
 								{
 									Name:  "INPUT_DATA",
@@ -182,7 +197,7 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 							VolumeMounts: []k8sv1.VolumeMount{},
 						},
 					},
-					RestartPolicy:    k8sv1.RestartPolicyNever,
+					RestartPolicy:    restartPolicy,
 					Volumes:          []k8sv1.Volume{},
 					ImagePullSecrets: []k8sv1.LocalObjectReference{},
 				},
