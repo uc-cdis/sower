@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 )
 
+// Container Struct to hold the configuration for Job Container
 type Container struct {
 	Name       string   `json:"name"`
 	Image      string   `json:"image"`
@@ -12,6 +13,7 @@ type Container struct {
 	Env        []string `json:"env"`
 }
 
+// SowerConfig Struct to hold all the configuration
 type SowerConfig struct {
 	Container     Container `json:"container"`
 	RestartPolicy string    `json:"restart_policy"`
