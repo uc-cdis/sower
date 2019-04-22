@@ -127,6 +127,10 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	labels["app"] = "sowerjob"
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
+
+	var conf = loadConfig("/sower/sower_config.json")
+	fmt.Println("config: ", conf)
+
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -156,8 +160,8 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
 					Containers: []k8sv1.Container{
 						{
-							Name:  "job-task",
-							Image: "quay.io/cdis/mickey-demo:latest",
+							Name:  conf.Container.Name,
+							Image: conf.Container.Image,
 							SecurityContext: &k8sv1.SecurityContext{
 								Privileged: &falseVal,
 							},
