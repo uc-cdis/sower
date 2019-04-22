@@ -6,10 +6,10 @@ import (
 )
 
 type Container struct {
-	Name       string
-	Image      string
-	PullPolicy string
-	Env        []string
+	Name       string   `json:"name"`
+	Image      string   `json:"image"`
+	PullPolicy string   `json:"pull_policy"`
+	Env        []string `json:"env"`
 }
 
 type SowerConfig struct {
