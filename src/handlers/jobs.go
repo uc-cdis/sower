@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -20,6 +21,8 @@ var (
 	trueVal  = true
 	falseVal = false
 )
+
+var kubectlNamespace = os.Getenv("POD_NAMESPACE")
 
 type JobsArray struct {
 	JobInfo []JobInfo `json:"jobs"`
@@ -46,7 +49,7 @@ func getJobClient() batchtypev1.JobInterface {
 	// Access jobs. We can't do it all in one line, since we need to receive the
 	// errors and manage thgem appropriately
 	batchClient := clientset.BatchV1()
-	jobsClient := batchClient.Jobs("default")
+	jobsClient := batchClient.Jobs(kubectlNamespace)
 	return jobsClient
 }
 
@@ -208,7 +211,7 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
-	pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(kubectlNamespace).List(metav1.ListOptions{})
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, jobname) {
 			return &pod
