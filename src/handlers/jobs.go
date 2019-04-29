@@ -120,9 +120,12 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 }
 
 func createK8sJob(inputData string, accessToken string, userName string) (*JobInfo, error) {
+	var conf = loadConfig("/sower_config.json")
+	fmt.Println("config: ", conf)
+
 	jobsClient := getJobClient()
 	randname := GetRandString(5)
-	name := fmt.Sprintf("simu-%s", randname)
+	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
 	var deadline int64 = 300
 	var backoff int32 = 1
@@ -130,9 +133,6 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	labels["app"] = "sowerjob"
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
-
-	var conf = loadConfig("/sower_config.json")
-	fmt.Println("config: ", conf)
 
 	var pullPolicies = map[string]k8sv1.PullPolicy{
 		"always":         k8sv1.PullAlways,

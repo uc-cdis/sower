@@ -15,6 +15,7 @@ type Container struct {
 
 // SowerConfig Struct to hold all the configuration
 type SowerConfig struct {
+	Name          string    `json:"name"`
 	Container     Container `json:"container"`
 	RestartPolicy string    `json:"restart_policy"`
 }
