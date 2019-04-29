@@ -11,10 +11,23 @@ type postData struct {
 	OutputURL string `json:"outputURL"`
 }
 
+/*
 func RegisterSower() {
 	http.HandleFunc("/dispatch", dispatch)
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/list", list)
+}
+*/
+
+func Runs(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.Method == "GET":
+		list(w, r)
+	case r.Method == "POST":
+		dispatch(w, r)
+	default:
+		http.Error(w, "Not a supported HTTP method.", 400)
+	}
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request) {
@@ -47,8 +60,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(out))
 }
 
-func status(w http.ResponseWriter, r *http.Request) {
-	UID := r.URL.Query().Get("UID")
+func Status(w http.ResponseWriter, r *http.Request) {
+	// UID := r.URL.Query().Get("UID")
+	UID := mux.Vars(r)["id"]
 	if UID != "" {
 		result, errUID := getJobStatusByID(UID)
 		if errUID != nil {

@@ -16,6 +16,11 @@ func RegisterSystem() {
     http.HandleFunc("/_version", systemVersion)
 }
 
+func ServiceInfo(w http.ResponseWriter, r *http.Request) {
+  systemStatus(w, r)
+  systemVersion(w, r)
+}
+
 func systemStatus(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Healthy")
 }
