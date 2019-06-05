@@ -119,7 +119,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(inputData string, accessToken string, userName string) (*JobInfo, error) {
+func createK8sJob(inputData string, accessToken string, key string, secret string, userName string) (*JobInfo, error) {
 	var conf = loadConfig("/sower_config.json")
 	fmt.Println("config: ", conf)
 
@@ -191,6 +191,14 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 								{
 									Name:  "ACCESS_TOKEN",
 									Value: accessToken,
+								},
+								{
+									Name:  "S3_KEY",
+									Value: key,
+								},
+								{
+									Name:  "S3_SECRET",
+									Value: secret,
 								},
 							},
 							VolumeMounts: []k8sv1.VolumeMount{},
