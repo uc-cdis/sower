@@ -65,7 +65,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, string(out))
+		fmt.Fprint(w, string(out))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return
@@ -81,13 +81,24 @@ func output(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		out, err := json.Marshal(result)
+		_, err := json.Marshal(result)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		fmt.Fprintf(w, string(out))
+		var resLine string
+		newLineSep := func(c rune) bool {
+			return c == '\n'
+		}
+		logLines := strings.FieldsFunc(result.Output, newLineSep)
+		for _, logLine := range logLines {
+			if strings.Contains(logLine, "[out] ") {
+				resLine = strings.Replace(logLine, "[out] ", "", -1)
+			}
+		}
+
+		fmt.Fprint(w, string(resLine))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return
