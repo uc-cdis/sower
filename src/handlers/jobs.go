@@ -119,7 +119,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(inputData string, accessToken string, key string, secret string, userName string) (*JobInfo, error) {
+func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCreds, peregrineCreds PeregrineCreds, userName string) (*JobInfo, error) {
 	var conf = loadConfig("/sower_config.json")
 	fmt.Println("config: ", conf)
 
@@ -193,12 +193,36 @@ func createK8sJob(inputData string, accessToken string, key string, secret strin
 									Value: accessToken,
 								},
 								{
+									Name:  "DICTIONARY_URL",
+									Value: os.Getenv("DICTIONARY_URL"),
+								},
+								{
+									Name:  "BUCKET_NAME",
+									Value: pelicanCreds.BucketName,
+								},
+								{
 									Name:  "S3_KEY",
-									Value: key,
+									Value: pelicanCreds.Key,
 								},
 								{
 									Name:  "S3_SECRET",
-									Value: secret,
+									Value: pelicanCreds.Secret,
+								},
+								{
+									Name:  "DB_HOST",
+									Value: peregrineCreds.DbHost,
+								},
+								{
+									Name:  "DB_USERNAME",
+									Value: peregrineCreds.DbUsername,
+								},
+								{
+									Name:  "DB_PASSWORD",
+									Value: peregrineCreds.DbPassword,
+								},
+								{
+									Name:  "DB_DATABASE",
+									Value: peregrineCreds.DbDatabase,
 								},
 							},
 							VolumeMounts: []k8sv1.VolumeMount{},

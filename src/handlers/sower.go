@@ -8,13 +8,6 @@ import (
 	"strings"
 )
 
-type Creds struct {
-	BucketName string `json:"manifest_bucket_name"`
-	Hostname   string `json:"hostname"`
-	Key        string `json:"aws_access_key_id"`
-	Secret     string `json:"aws_secret_access_key"`
-}
-
 func RegisterSower() {
 	http.HandleFunc("/dispatch", dispatch)
 	http.HandleFunc("/status", status)
@@ -28,13 +21,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	credsFile, _ := ioutil.ReadFile("/creds.json")
-	var creds Creds
-	json.Unmarshal(credsFile, &creds)
-
-	fmt.Println("successfully read creds.json")
-	fmt.Println("s3 key:    " + creds.Key)
-	fmt.Println("s3 secret: " + creds.Secret)
+	pelicanCreds := loadPelicanCreds("/pelican-creds.json")
+	peregrineCreds := loadPeregrineCreds("/peregrine-creds.json")
 
 	accessToken := getBearerToken(r)
 
@@ -48,7 +36,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	userName := r.Header.Get("REMOTE_USER")
 
-	result, err := createK8sJob(string(inputData), *accessToken, creds.Key, creds.Secret, userName)
+	result, err := createK8sJob(string(inputData), *accessToken, pelicanCreds, peregrineCreds, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
