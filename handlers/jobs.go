@@ -106,7 +106,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 		return "Unknown"
 	}
 
-	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#jobstatus-v1-batch
 	if status.Active >= 1 {
 		return "Running"
 	}
