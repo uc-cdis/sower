@@ -98,7 +98,16 @@ func output(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Fprint(w, string(resLine))
+		jsonResLine := JobOutput{}
+		jsonResLine.Output = resLine
+
+		res, err := json.Marshal(jsonResLine)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprint(w, string(res))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return
