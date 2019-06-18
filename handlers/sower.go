@@ -20,6 +20,10 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", 404)
 		return
 	}
+
+	pelicanCreds := loadPelicanCreds("/pelican-creds.json")
+	peregrineCreds := loadPeregrineCreds("/peregrine-creds.json")
+
 	accessToken := getBearerToken(r)
 
 	inputData, err := ioutil.ReadAll(r.Body)
@@ -32,7 +36,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	userName := r.Header.Get("REMOTE_USER")
 
-	result, err := createK8sJob(string(inputData), *accessToken, userName)
+	result, err := createK8sJob(string(inputData), *accessToken, pelicanCreds, peregrineCreds, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -61,7 +65,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, string(out))
+		fmt.Fprint(w, string(out))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return
@@ -77,13 +81,33 @@ func output(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		out, err := json.Marshal(result)
+		_, err := json.Marshal(result)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		fmt.Fprintf(w, string(out))
+		var resLine string
+		newLineSep := func(c rune) bool {
+			return c == '\n'
+		}
+		logLines := strings.FieldsFunc(result.Output, newLineSep)
+		for _, logLine := range logLines {
+			if strings.Contains(logLine, "[out] ") {
+				resLine = strings.Replace(logLine, "[out] ", "", -1)
+			}
+		}
+
+		jsonResLine := JobOutput{}
+		jsonResLine.Output = resLine
+
+		res, err := json.Marshal(jsonResLine)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprint(w, string(res))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return

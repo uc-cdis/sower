@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -20,6 +21,8 @@ var (
 	trueVal  = true
 	falseVal = false
 )
+
+var kubectlNamespace = os.Getenv("POD_NAMESPACE")
 
 type JobsArray struct {
 	JobInfo []JobInfo `json:"jobs"`
@@ -46,7 +49,7 @@ func getJobClient() batchtypev1.JobInterface {
 	// Access jobs. We can't do it all in one line, since we need to receive the
 	// errors and manage thgem appropriately
 	batchClient := clientset.BatchV1()
-	jobsClient := batchClient.Jobs("default")
+	jobsClient := batchClient.Jobs(kubectlNamespace)
 	return jobsClient
 }
 
@@ -103,7 +106,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 		return "Unknown"
 	}
 
-	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#jobstatus-v1-batch
 	if status.Active >= 1 {
 		return "Running"
 	}
@@ -116,10 +119,13 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(inputData string, accessToken string, userName string) (*JobInfo, error) {
+func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCreds, peregrineCreds PeregrineCreds, userName string) (*JobInfo, error) {
+	var conf = loadConfig("/sower_config.json")
+	fmt.Println("config: ", conf)
+
 	jobsClient := getJobClient()
 	randname := GetRandString(5)
-	name := fmt.Sprintf("simu-%s", randname)
+	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
 	var deadline int64 = 300
 	var backoff int32 = 1
@@ -127,6 +133,21 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 	labels["app"] = "sowerjob"
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
+
+	var pullPolicies = map[string]k8sv1.PullPolicy{
+		"always":         k8sv1.PullAlways,
+		"if_not_present": k8sv1.PullIfNotPresent,
+		"never":          k8sv1.PullNever,
+	}
+
+	var restartPolicies = map[string]k8sv1.RestartPolicy{
+		"on_failure": k8sv1.RestartPolicyOnFailure,
+		"never":      k8sv1.RestartPolicyNever,
+	}
+
+	var pullPolicy = k8sv1.PullPolicy(pullPolicies[conf.Container.PullPolicy])
+	var restartPolicy = restartPolicies[conf.RestartPolicy]
+
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
 	batchJob := &batchv1.Job{
@@ -156,12 +177,12 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
 					Containers: []k8sv1.Container{
 						{
-							Name:  "job-task",
-							Image: "quay.io/cdis/mickey-demo:latest",
+							Name:  conf.Container.Name,
+							Image: conf.Container.Image,
 							SecurityContext: &k8sv1.SecurityContext{
 								Privileged: &falseVal,
 							},
-							ImagePullPolicy: k8sv1.PullPolicy(k8sv1.PullAlways),
+							ImagePullPolicy: pullPolicy,
 							Env: []k8sv1.EnvVar{
 								{
 									Name:  "INPUT_DATA",
@@ -171,11 +192,43 @@ func createK8sJob(inputData string, accessToken string, userName string) (*JobIn
 									Name:  "ACCESS_TOKEN",
 									Value: accessToken,
 								},
+								{
+									Name:  "DICTIONARY_URL",
+									Value: os.Getenv("DICTIONARY_URL"),
+								},
+								{
+									Name:  "BUCKET_NAME",
+									Value: pelicanCreds.BucketName,
+								},
+								{
+									Name:  "S3_KEY",
+									Value: pelicanCreds.Key,
+								},
+								{
+									Name:  "S3_SECRET",
+									Value: pelicanCreds.Secret,
+								},
+								{
+									Name:  "DB_HOST",
+									Value: peregrineCreds.DbHost,
+								},
+								{
+									Name:  "DB_USERNAME",
+									Value: peregrineCreds.DbUsername,
+								},
+								{
+									Name:  "DB_PASSWORD",
+									Value: peregrineCreds.DbPassword,
+								},
+								{
+									Name:  "DB_DATABASE",
+									Value: peregrineCreds.DbDatabase,
+								},
 							},
 							VolumeMounts: []k8sv1.VolumeMount{},
 						},
 					},
-					RestartPolicy:    k8sv1.RestartPolicyNever,
+					RestartPolicy:    restartPolicy,
 					Volumes:          []k8sv1.Volume{},
 					ImagePullSecrets: []k8sv1.LocalObjectReference{},
 				},
@@ -204,7 +257,7 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
-	pods, err := clientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(kubectlNamespace).List(metav1.ListOptions{})
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, jobname) {
 			return &pod

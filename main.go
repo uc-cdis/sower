@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"handlers"
+	"github.com/uc-cdis/sower/handlers"
 	"log"
 	"net/http"
 )

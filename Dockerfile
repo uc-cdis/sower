@@ -1,34 +1,25 @@
-FROM golang:1.10 as build-deps
+FROM golang:1.12-stretch as build-deps
 
-WORKDIR /sower
-ENV GOPATH=/sower
+WORKDIR $GOPATH/src/github.com/uc-cdis/sower/
 
-RUN go get -tags k8s.io/client-go/kubernetes \
-    k8s.io/apimachinery/pkg/apis/meta/v1 \
-    k8s.io/api/core/v1 \
-    k8s.io/api/batch/v1 \
-    k8s.io/client-go/tools/clientcmd \
-    k8s.io/client-go/rest \
-    github.com/golang/protobuf/proto \
-    github.com/googleapis/gnostic/OpenAPIv2
+COPY go.mod .
+COPY go.sum .
 
-COPY . /sower
+ENV GO111MODULE=on
+RUN go mod download
+
+COPY . .
 
 # Populate git version info into the code
-RUN echo "package handlers\n\nconst (" >src/handlers/gitversion.go \
-    && COMMIT=`git rev-parse HEAD` && echo "    gitcommit=\"${COMMIT}\"" >>src/handlers/gitversion.go \
-    && VERSION=`git describe --always --tags` && echo "    gitversion=\"${VERSION}\"" >>src/handlers/gitversion.go \
-    && echo ")" >>src/handlers/gitversion.go
+RUN echo "package handlers\n\nconst (" > handlers/gitversion.go \
+    && COMMIT=`git rev-parse HEAD` && echo "    gitcommit=\"${COMMIT}\"" >> handlers/gitversion.go \
+    && VERSION=`git describe --always --tags` && echo "    gitversion=\"${VERSION}\"" >> handlers/gitversion.go \
+    && echo ")" >> handlers/gitversion.go
 
-
-RUN echo $SHELL
-RUN echo $GOPATH
-RUN ls -al
-RUN ls -al src/handlers
-RUN go build -ldflags "-linkmode external -extldflags -static"
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /sower
 
 # Store only the resulting binary in the final image
 # Resulting in significantly smaller docker image size
 FROM scratch
-COPY --from=build-deps /sower/sower /sower
+COPY --from=build-deps /sower /sower
 CMD ["/sower"]
