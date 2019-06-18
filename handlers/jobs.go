@@ -185,6 +185,10 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 							ImagePullPolicy: pullPolicy,
 							Env: []k8sv1.EnvVar{
 								{
+									Name:  "GEN3_HOSTNAME",
+									Value: os.Getenv("GEN3_HOSTNAME"),
+								},
+								{
 									Name:  "INPUT_DATA",
 									Value: inputData,
 								},
