@@ -11,6 +11,7 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	batchtypev1 "k8s.io/client-go/kubernetes/typed/batch/v1"
@@ -183,6 +184,16 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 								Privileged: &falseVal,
 							},
 							ImagePullPolicy: pullPolicy,
+							Resources: k8sv1.ResourceRequirements{
+								Limits: k8sv1.ResourceList{
+									k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+									k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+								},
+								Requests: k8sv1.ResourceList{
+									k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+									k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+								},
+							},
 							Env: []k8sv1.EnvVar{
 								{
 									Name:  "GEN3_HOSTNAME",
