@@ -1,0 +1,145 @@
+openapi: 3.0.1
+info:
+  title: Sower API
+  description: Sower job dispatcher
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: https://qa-dcp.planx-pla.net/sower/
+tags:
+- name: sower
+  description: Operations on job dispatch with sower
+security:
+  - bearerAuth: [] 
+paths:
+  /dispatch:
+    post:
+      tags:
+      - sower
+      summary: DispatchAJob
+      operationId: dispatch
+      parameters:
+      - in: "query"
+        name: "body"
+        description: "Input JSON"
+        required: true
+        schema:
+          type: "object"
+      responses:
+        200:
+          description: job successfully dispatched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobInfo"
+  /status:
+    get:
+      tags:
+      - sower
+      summary: Get the status of a job
+      operationId: status
+      parameters:
+      - in: "path"
+        name: "uid"
+        description: "Job UID"
+        required: true
+        schema:
+          type: "integer"
+      responses:
+        200:
+          description: job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobInfo"
+  /list:
+    get:
+      tags:
+      - sower
+      summary: List all running jobs
+      operationId: list
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobInfo"
+  /output:
+    get:
+      tags:
+      - sower
+      summary: Get the output of the job run
+      operationId: output
+      responses:
+        200:
+          description: result of the job execution
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Output"
+  /_status:
+    get:
+      tags:
+      - sower
+      summary: Get the health status of sower
+      operationId: _status
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/text:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /_version:
+    get:
+      tags:
+      - sower
+      summary: Get the sower version
+      operationId: _version
+      responses:
+        200:
+          description: "Version information: git commit and version string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Version"
+components:
+  schemas:
+    JobInfo:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: Unique identifier for the Job
+        name:
+          type: string
+          description: Name of the Job
+        status:
+          type: string
+          description: Running status for the Job
+    Output:
+      type: object
+      properties:
+        output:
+          type: string
+          description: Output from the running Job
+    Status:
+      type: string
+      enum: [Healthy]
+      description: >
+        Value:
+         * `Healthy` - The sower is running
+    Version:
+      type: object
+      properties:
+        commit:
+          type: string
+        version:
+          type: string
