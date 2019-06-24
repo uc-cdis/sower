@@ -7,10 +7,12 @@ import (
 
 // Container Struct to hold the configuration for Job Container
 type Container struct {
-	Name       string   `json:"name"`
-	Image      string   `json:"image"`
-	PullPolicy string   `json:"pull_policy"`
-	Env        []string `json:"env"`
+	Name        string   `json:"name"`
+	Image       string   `json:"image"`
+	PullPolicy  string   `json:"pull_policy"`
+	Env         []string `json:"env"`
+	CPULimit    string   `json:"cpu-limit"`
+	MemoryLimit string   `json:"memory-limit"`
 }
 
 // SowerConfig Struct to hold all the configuration
