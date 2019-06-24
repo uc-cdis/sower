@@ -11,8 +11,8 @@ type Container struct {
 	Image       string   `json:"image"`
 	PullPolicy  string   `json:"pull_policy"`
 	Env         []string `json:"env"`
-	CPULimit    string   `json:"cpu_limit"`
-	MemoryLimit string   `json:"memory_limit"`
+	CPULimit    string   `json:"cpu-limit"`
+	MemoryLimit string   `json:"memory-limit"`
 }
 
 // SowerConfig Struct to hold all the configuration
