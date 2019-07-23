@@ -1,21 +1,28 @@
 package main
 
 import (
-	"fmt"
-	"github.com/uc-cdis/sower/handlers"
-	"log"
+	"math/rand"
 	"net/http"
+	"os"
+	"time"
+
+	"github.com/uc-cdis/sower/handlers"
+
+	"github.com/apex/log"
+	"github.com/apex/log/handlers/text"
+	// "github.com/apex/log/handlers/json"
 )
 
 func main() {
-	fmt.Println("Running main")
-	http.HandleFunc("/", repoHandler)
+	log.SetHandler(text.New(os.Stderr))
+
+	rand.Seed(time.Now().UnixNano())
+
+	log.Info("Server started")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	handlers.RegisterSystem()
 	handlers.RegisterSower()
 	go handlers.StartMonitoringProcess()
-	log.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
-}
 
-func repoHandler(w http.ResponseWriter, r *http.Request) {
-	//...
+	log.Fatalf("%s", http.ListenAndServe("0.0.0.0:8000", nil))
 }
