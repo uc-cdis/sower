@@ -128,7 +128,7 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 	randname := GetRandString(5)
 	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
-	var deadline int64 = 300
+	var deadline int64 = 3600
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
