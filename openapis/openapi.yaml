@@ -6,13 +6,17 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
+  contact:
+    name: Andrew Prokhorenkov
+    email: aprokh@uchicago.edu
+    url: https://ctds.uchicago.edu
 servers:
 - url: https://qa-dcp.planx-pla.net/sower/
 tags:
 - name: sower
   description: Operations on job dispatch with sower
 security:
-  - bearerAuth: [] 
+  - bearerAuth: []
 paths:
   /dispatch:
     post:
@@ -41,7 +45,7 @@ paths:
       summary: Get the status of a job
       operationId: status
       parameters:
-      - in: "path"
+      - in: "query"
         name: "uid"
         description: "Job UID"
         required: true
@@ -111,6 +115,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/Version"
 components:
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     JobInfo:
       type: object

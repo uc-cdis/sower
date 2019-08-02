@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apex/log"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -18,23 +19,16 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var (
-	trueVal  = true
-	falseVal = false
-)
-
 var kubectlNamespace = os.Getenv("POD_NAMESPACE")
 
-type JobsArray struct {
-	JobInfo []JobInfo `json:"jobs"`
-}
-
+// JobInfo is an information about dispatched job
 type JobInfo struct {
 	UID    string `json:"uid"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
 
+// JobOutput to return job output
 type JobOutput struct {
 	Output string `json:"output"`
 }
@@ -50,12 +44,16 @@ func getJobClient() batchtypev1.JobInterface {
 	// Access jobs. We can't do it all in one line, since we need to receive the
 	// errors and manage thgem appropriately
 	batchClient := clientset.BatchV1()
-	jobsClient := batchClient.Jobs(kubectlNamespace)
-	return jobsClient
+	jobClient := batchClient.Jobs(kubectlNamespace)
+	return jobClient
 }
 
-func getJobByID(jc batchtypev1.JobInterface, jobid string) (*batchv1.Job, error) {
-	jobs, err := jc.List(metav1.ListOptions{})
+func getJobByID(jobid string) (*batchv1.Job, error) {
+	log.WithField("jobid", jobid).Debug("Get Job By ID")
+
+	jc := getJobClient()
+
+	jobs, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
 	if err != nil {
 		return nil, err
 	}
@@ -68,35 +66,28 @@ func getJobByID(jc batchtypev1.JobInterface, jobid string) (*batchv1.Job, error)
 }
 
 func getJobStatusByID(jobid string) (*JobInfo, error) {
-	job, err := getJobByID(getJobClient(), jobid)
+	log.WithField("jobid", jobid).Debug("Get Job Status By ID")
+
+	job, err := getJobByID(jobid)
 	if err != nil {
 		return nil, err
 	}
-	if job.Labels["app"] != "sowerjob" {
-		return nil, fmt.Errorf("job with jobid %s not found", jobid)
-	}
-	ji := JobInfo{}
-	ji.Name = job.Name
-	ji.UID = string(job.GetUID())
-	ji.Status = jobStatusToString(&job.Status)
+	ji := JobInfo{Name: job.Name, UID: string(job.GetUID()), Status: jobStatusToString(&job.Status)}
 	return &ji, nil
 }
 
-func listJobs(jc batchtypev1.JobInterface) JobsArray {
-	jobs := JobsArray{}
+func listJobs(jc batchtypev1.JobInterface) []JobInfo {
+	jobs := []JobInfo{}
 
 	jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
-
 	if err != nil {
 		return jobs
 	}
 
 	for _, job := range jobsList.Items {
-		ji := JobInfo{}
-		ji.Name = job.Name
-		ji.UID = string(job.GetUID())
-		ji.Status = jobStatusToString(&job.Status)
-		jobs.JobInfo = append(jobs.JobInfo, ji)
+		ji := JobInfo{Name: job.Name,
+			UID: string(job.GetUID()), Status: jobStatusToString(&job.Status)}
+		jobs = append(jobs, ji)
 	}
 
 	return jobs
@@ -120,8 +111,18 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCreds, peregrineCreds PeregrineCreds, userName string) (*JobInfo, error) {
-	var conf = loadConfig("/sower_config.json")
+func createK8sJob(currentAction string, inputData string, accessToken string, userName string) (*JobInfo, error) {
+	var availableActions = loadSowerConfigs("/sower_config.json")
+	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
+	var actions = filter(availableActions, getCurrentAction)
+
+	if len(actions) != 1 {
+		fmt.Println("Incorrect action requested")
+		return nil, nil
+	}
+
+	var conf = actions[0]
+
 	fmt.Println("config: ", conf)
 
 	jobsClient := getJobClient()
@@ -135,19 +136,25 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
 
-	var pullPolicies = map[string]k8sv1.PullPolicy{
-		"always":         k8sv1.PullAlways,
-		"if_not_present": k8sv1.PullIfNotPresent,
-		"never":          k8sv1.PullNever,
-	}
+	var privileged = false
 
-	var restartPolicies = map[string]k8sv1.RestartPolicy{
-		"on_failure": k8sv1.RestartPolicyOnFailure,
-		"never":      k8sv1.RestartPolicyNever,
+	var env = []k8sv1.EnvVar{
+		{
+			Name:  "INPUT_DATA",
+			Value: inputData,
+		},
+		{
+			Name:  "ACCESS_TOKEN",
+			Value: accessToken,
+		},
 	}
+	env = append(env, conf.Container.Env...)
 
-	var pullPolicy = k8sv1.PullPolicy(pullPolicies[conf.Container.PullPolicy])
-	var restartPolicy = restartPolicies[conf.RestartPolicy]
+	var volumes []k8sv1.Volume
+	volumes = append(volumes, conf.Volumes...)
+
+	var volumeMounts []k8sv1.VolumeMount
+	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
@@ -175,15 +182,14 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 					Labels: labels,
 				},
 				Spec: k8sv1.PodSpec{
-					InitContainers: []k8sv1.Container{}, // Doesn't seem obligatory(?)...
 					Containers: []k8sv1.Container{
 						{
 							Name:  conf.Container.Name,
 							Image: conf.Container.Image,
 							SecurityContext: &k8sv1.SecurityContext{
-								Privileged: &falseVal,
+								Privileged: &privileged,
 							},
-							ImagePullPolicy: pullPolicy,
+							ImagePullPolicy: conf.Container.PullPolicy,
 							Resources: k8sv1.ResourceRequirements{
 								Limits: k8sv1.ResourceList{
 									k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
@@ -194,62 +200,16 @@ func createK8sJob(inputData string, accessToken string, pelicanCreds PelicanCred
 									k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
 								},
 							},
-							Env: []k8sv1.EnvVar{
-								{
-									Name:  "GEN3_HOSTNAME",
-									Value: os.Getenv("GEN3_HOSTNAME"),
-								},
-								{
-									Name:  "INPUT_DATA",
-									Value: inputData,
-								},
-								{
-									Name:  "ACCESS_TOKEN",
-									Value: accessToken,
-								},
-								{
-									Name:  "DICTIONARY_URL",
-									Value: os.Getenv("DICTIONARY_URL"),
-								},
-								{
-									Name:  "BUCKET_NAME",
-									Value: pelicanCreds.BucketName,
-								},
-								{
-									Name:  "S3_KEY",
-									Value: pelicanCreds.Key,
-								},
-								{
-									Name:  "S3_SECRET",
-									Value: pelicanCreds.Secret,
-								},
-								{
-									Name:  "DB_HOST",
-									Value: peregrineCreds.DbHost,
-								},
-								{
-									Name:  "DB_USERNAME",
-									Value: peregrineCreds.DbUsername,
-								},
-								{
-									Name:  "DB_PASSWORD",
-									Value: peregrineCreds.DbPassword,
-								},
-								{
-									Name:  "DB_DATABASE",
-									Value: peregrineCreds.DbDatabase,
-								},
-							},
-							VolumeMounts: []k8sv1.VolumeMount{},
+							Env:          env,
+							VolumeMounts: volumeMounts,
 						},
 					},
-					RestartPolicy:    restartPolicy,
-					Volumes:          []k8sv1.Volume{},
+					RestartPolicy:    conf.RestartPolicy,
+					Volumes:          volumes,
 					ImagePullSecrets: []k8sv1.LocalObjectReference{},
 				},
 			},
 		},
-		// Optional, not used by pach: JobStatus:,
 	}
 
 	newJob, err := jobsClient.Create(batchJob)
@@ -282,12 +242,9 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 }
 
 func getJobLogs(jobid string) (*JobOutput, error) {
-	job, err := getJobByID(getJobClient(), jobid)
+	job, err := getJobByID(jobid)
 	if err != nil {
 		return nil, err
-	}
-	if job.Labels["app"] != "sowerjob" {
-		return nil, fmt.Errorf("job with jobid %s not found", jobid)
 	}
 
 	pod := getPodMatchingJob(job.Name)
@@ -323,7 +280,7 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 
 }
 
-// GetRandString returns a random string of lenght N
+// GetRandString returns a random string of length N
 func GetRandString(n int) string {
 	letterBytes := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, n)

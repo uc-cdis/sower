@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/apex/log"
 )
 
 func RegisterSower() {
@@ -15,18 +17,22 @@ func RegisterSower() {
 	http.HandleFunc("/output", output)
 }
 
+// InputRequest Struct
+type InputRequest struct {
+	Action string                 `json:"action"`
+	Input  map[string]interface{} `json:"input"`
+}
+
 func dispatch(w http.ResponseWriter, r *http.Request) {
+	log.Debug("Dispatch")
 	if r.Method != "POST" {
 		http.Error(w, "Not Found", 404)
 		return
 	}
 
-	pelicanCreds := loadPelicanCreds("/pelican-creds.json")
-	peregrineCreds := loadPeregrineCreds("/peregrine-creds.json")
-
 	accessToken := getBearerToken(r)
 
-	inputData, err := ioutil.ReadAll(r.Body)
+	inputDataStr, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {
@@ -36,12 +42,24 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	userName := r.Header.Get("REMOTE_USER")
 
-	result, err := createK8sJob(string(inputData), *accessToken, pelicanCreds, peregrineCreds, userName)
+	var inputRequest InputRequest
+	_ = json.Unmarshal(inputDataStr, &inputRequest)
+
+	var currentAction = inputRequest.Action
+
+	out, err := json.Marshal(inputRequest.Input)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(out))
+
+	result, err := createK8sJob(currentAction, string(out), *accessToken, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	out, err := json.Marshal(result)
+	out, err = json.Marshal(result)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
