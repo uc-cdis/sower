@@ -31,6 +31,11 @@ paths:
         required: true
         schema:
           type: "object"
+          properties:
+            action:
+              type: "string"
+            input:
+              type: "object"
       responses:
         200:
           description: job successfully dispatched
@@ -85,9 +90,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Output"
+                $ref: "#/components/schemas/Output"
   /_status:
     get:
       tags:
