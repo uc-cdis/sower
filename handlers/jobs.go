@@ -20,7 +20,7 @@ import (
 )
 
 var kubectlNamespace = os.Getenv("POD_NAMESPACE")
-var jobDeadline = os.Getenv("JOB_DEADLINE")
+var jobDeadline int64 = os.Getenv("JOB_DEADLINE")
 
 // JobInfo is an information about dispatched job
 type JobInfo struct {
