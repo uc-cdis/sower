@@ -20,6 +20,7 @@ import (
 )
 
 var kubectlNamespace = os.Getenv("POD_NAMESPACE")
+var jobDeadline = os.Getenv("JOB_DEADLINE")
 
 // JobInfo is an information about dispatched job
 type JobInfo struct {
@@ -129,7 +130,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	randname := GetRandString(5)
 	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
-	var deadline int64 = 3600
+	//var deadline int64 = 3600
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
@@ -175,7 +176,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
 			BackoffLimit:          &backoff,
-			ActiveDeadlineSeconds: &deadline,
+			ActiveDeadlineSeconds: &jobDeadline,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   name,
