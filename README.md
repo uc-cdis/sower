@@ -1,6 +1,6 @@
-# Sower
+# Sower [![Docker Repository on Quay](https://quay.io/repository/cdis/sower/status "Docker Repository on Quay")](https://quay.io/repository/cdis/sower)
 
-Sower dispatches Kubernetes Jobs
+Sower dispatches Kubernetes jobs.
 
 ## API Documentation
 
@@ -8,3 +8,9 @@ Sower dispatches Kubernetes Jobs
 
 YAML file for the OpenAPI documentation is found in the `openapis` folder (in
 the root directory); see the README in that folder for more details.
+
+## List of available jobs
+
+* [Pelican][1] - job to export/import PFB
+
+  [1]: https://github.com/uc-cdis/pelican
