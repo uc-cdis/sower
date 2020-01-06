@@ -54,7 +54,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(string(out))
 
-	result, err := createK8sJob(currentAction, string(out), *accessToken, userName)
+	accessTokenVal := ""
+	if accessToken != nil {
+		accessTokenVal = *accessToken
+	}
+
+	result, err := createK8sJob(currentAction, string(out), accessTokenVal, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -148,11 +153,11 @@ func getBearerToken(r *http.Request) *string {
 	authHeader := r.Header.Get("Authorization")
 	fmt.Println("header: ", authHeader)
 	if authHeader == "" {
-		return ""
+		return nil
 	}
 	s := strings.SplitN(authHeader, " ", 2)
 	if len(s) == 2 && strings.ToLower(s[0]) == "bearer" {
 		return &s[1]
 	}
-	return ""
+	return nil
 }
