@@ -148,11 +148,11 @@ func getBearerToken(r *http.Request) *string {
 	authHeader := r.Header.Get("Authorization")
 	fmt.Println("header: ", authHeader)
 	if authHeader == "" {
-		return nil
+		return ""
 	}
 	s := strings.SplitN(authHeader, " ", 2)
 	if len(s) == 2 && strings.ToLower(s[0]) == "bearer" {
 		return &s[1]
 	}
-	return nil
+	return ""
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	k8sv1 "k8s.io/api/core/v1"
@@ -30,6 +31,10 @@ type SowerConfig struct {
 func loadSowerConfigs(config string) []SowerConfig {
 	plan, _ := ioutil.ReadFile(config)
 	var data []SowerConfig
-	_ = json.Unmarshal(plan, &data)
+	err := json.Unmarshal(plan, &data)
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+		return nil
+	}
 	return data
 }
