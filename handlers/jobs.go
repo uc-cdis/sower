@@ -112,7 +112,11 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 }
 
 func createK8sJob(currentAction string, inputData string, accessToken string, userName string) (*JobInfo, error) {
+	fmt.Println("Username: ", userName)
+	fmt.Println("accessToken: ", accessToken)
+	fmt.Println("currentAction: ", currentAction)
 	var availableActions = loadSowerConfigs("/sower_config.json")
+	fmt.Println("actions: ", availableActions)
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
 
