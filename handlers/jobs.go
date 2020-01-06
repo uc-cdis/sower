@@ -115,8 +115,8 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	fmt.Println("Username: ", userName)
 	fmt.Println("accessToken: ", accessToken)
 	fmt.Println("currentAction: ", currentAction)
-	fmt.Println("actiions: ", availableActions)
 	var availableActions = loadSowerConfigs("/sower_config.json")
+	fmt.Println("actions: ", availableActions)
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
 
