@@ -129,7 +129,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	randname := GetRandString(5)
 	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
-	var deadline int64 = 3600
+	var deadline int64 = 7200
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"

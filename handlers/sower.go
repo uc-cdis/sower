@@ -54,7 +54,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(string(out))
 
-	result, err := createK8sJob(currentAction, string(out), *accessToken, userName)
+	accessTokenVal := ""
+	if accessToken != nil {
+		accessTokenVal = *accessToken
+	}
+
+	result, err := createK8sJob(currentAction, string(out), accessTokenVal, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
