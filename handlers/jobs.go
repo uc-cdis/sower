@@ -112,11 +112,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 }
 
 func createK8sJob(currentAction string, inputData string, accessToken string, userName string) (*JobInfo, error) {
-	fmt.Println("Username: ", userName)
-	fmt.Println("accessToken: ", accessToken)
-	fmt.Println("currentAction: ", currentAction)
 	var availableActions = loadSowerConfigs("/sower_config.json")
-	fmt.Println("actions: ", availableActions)
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
 
@@ -133,7 +129,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	randname := GetRandString(5)
 	name := fmt.Sprintf("%s-%s", conf.Name, randname)
 	fmt.Println("input data: ", inputData)
-	var deadline int64 = 3600
+	var deadline int64 = 7200
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
