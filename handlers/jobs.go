@@ -211,7 +211,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 						RestartPolicy:      conf.RestartPolicy,
 						Volumes:            volumes,
 						ImagePullSecrets:   []k8sv1.LocalObjectReference{},
-						ServiceAccountName: &saName,
+						ServiceAccountName: saName,
 					},
 				},
 			},
