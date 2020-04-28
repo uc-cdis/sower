@@ -157,8 +157,8 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
 	// create job with service account if specified in the config
-	if s.ServiceACcountName != nil {
-		var saName string = conf.ServiceAccountName
+	if conf.ServiceAccountName != nil {
+		var saName *string = conf.ServiceAccountName
 
 		// For an example of how to create jobs, see this file:
 		// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
