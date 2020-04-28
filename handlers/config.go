@@ -21,11 +21,12 @@ type Container struct {
 
 // SowerConfig Struct to hold all the configuration
 type SowerConfig struct {
-	Name          string              `json:"name"`
-	Action        string              `json:"action"`
-	Container     Container           `json:"container"`
-	Volumes       []k8sv1.Volume      `json:"volumes"`
-	RestartPolicy k8sv1.RestartPolicy `json:"restart_policy"`
+	Name               string              `json:"name"`
+	Action             string              `json:"action"`
+	Container          Container           `json:"container"`
+	Volumes            []k8sv1.Volume      `json:"volumes"`
+	RestartPolicy      k8sv1.RestartPolicy `json:"restart_policy"`
+	ServiceAccountName *string             `json:"serviceAccountName"`
 }
 
 func loadSowerConfigs(config string) []SowerConfig {

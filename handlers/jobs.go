@@ -156,61 +156,124 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	var volumeMounts []k8sv1.VolumeMount
 	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
-	// For an example of how to create jobs, see this file:
-	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-	batchJob := &batchv1.Job{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Job",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Labels:      labels,
-			Annotations: annotations,
-		},
-		Spec: batchv1.JobSpec{
-			// Optional: Parallelism:,
-			// Optional: Completions:,
-			// Optional: ActiveDeadlineSeconds:,
-			// Optional: Selector:,
-			// Optional: ManualSelector:,
-			BackoffLimit:          &backoff,
-			ActiveDeadlineSeconds: &deadline,
-			Template: k8sv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   name,
-					Labels: labels,
-				},
-				Spec: k8sv1.PodSpec{
-					Containers: []k8sv1.Container{
-						{
-							Name:  conf.Container.Name,
-							Image: conf.Container.Image,
-							SecurityContext: &k8sv1.SecurityContext{
-								Privileged: &privileged,
-							},
-							ImagePullPolicy: conf.Container.PullPolicy,
-							Resources: k8sv1.ResourceRequirements{
-								Limits: k8sv1.ResourceList{
-									k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
-									k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
-								},
-								Requests: k8sv1.ResourceList{
-									k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
-									k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
-								},
-							},
-							Env:          env,
-							VolumeMounts: volumeMounts,
-						},
+	// create job with service account if specified in the config
+	if s.ServiceACcountName != nil {
+		var saName string = conf.ServiceAccountName
+
+		// For an example of how to create jobs, see this file:
+		// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
+		batchJob := &batchv1.Job{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Job",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Labels:      labels,
+				Annotations: annotations,
+			},
+			Spec: batchv1.JobSpec{
+				// Optional: Parallelism:,
+				// Optional: Completions:,
+				// Optional: ActiveDeadlineSeconds:,
+				// Optional: Selector:,
+				// Optional: ManualSelector:,
+				BackoffLimit:          &backoff,
+				ActiveDeadlineSeconds: &deadline,
+				Template: k8sv1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   name,
+						Labels: labels,
 					},
-					RestartPolicy:    conf.RestartPolicy,
-					Volumes:          volumes,
-					ImagePullSecrets: []k8sv1.LocalObjectReference{},
+					Spec: k8sv1.PodSpec{
+						Containers: []k8sv1.Container{
+							{
+								Name:  conf.Container.Name,
+								Image: conf.Container.Image,
+								SecurityContext: &k8sv1.SecurityContext{
+									Privileged: &privileged,
+								},
+								ImagePullPolicy: conf.Container.PullPolicy,
+								Resources: k8sv1.ResourceRequirements{
+									Limits: k8sv1.ResourceList{
+										k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+										k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+									},
+									Requests: k8sv1.ResourceList{
+										k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+										k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+									},
+								},
+								Env:          env,
+								VolumeMounts: volumeMounts,
+							},
+						},
+						RestartPolicy:      conf.RestartPolicy,
+						Volumes:            volumes,
+						ImagePullSecrets:   []k8sv1.LocalObjectReference{},
+						ServiceAccountName: &saName,
+					},
 				},
 			},
-		},
+		}
+	} else {
+		// For an example of how to create jobs, see this file:
+		// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
+		batchJob := &batchv1.Job{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Job",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Labels:      labels,
+				Annotations: annotations,
+			},
+			Spec: batchv1.JobSpec{
+				// Optional: Parallelism:,
+				// Optional: Completions:,
+				// Optional: ActiveDeadlineSeconds:,
+				// Optional: Selector:,
+				// Optional: ManualSelector:,
+				BackoffLimit:          &backoff,
+				ActiveDeadlineSeconds: &deadline,
+				Template: k8sv1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   name,
+						Labels: labels,
+					},
+					Spec: k8sv1.PodSpec{
+						Containers: []k8sv1.Container{
+							{
+								Name:  conf.Container.Name,
+								Image: conf.Container.Image,
+								SecurityContext: &k8sv1.SecurityContext{
+									Privileged: &privileged,
+								},
+								ImagePullPolicy: conf.Container.PullPolicy,
+								Resources: k8sv1.ResourceRequirements{
+									Limits: k8sv1.ResourceList{
+										k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+										k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+									},
+									Requests: k8sv1.ResourceList{
+										k8sv1.ResourceCPU:    resource.MustParse(conf.Container.CPULimit),
+										k8sv1.ResourceMemory: resource.MustParse(conf.Container.MemoryLimit),
+									},
+								},
+								Env:          env,
+								VolumeMounts: volumeMounts,
+							},
+						},
+						RestartPolicy:      conf.RestartPolicy,
+						Volumes:            volumes,
+						ImagePullSecrets:   []k8sv1.LocalObjectReference{},
+					},
+				},
+			},
+		}
 	}
+
 
 	newJob, err := jobsClient.Create(batchJob)
 	if err != nil {
