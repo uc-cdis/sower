@@ -156,13 +156,15 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	var volumeMounts []k8sv1.VolumeMount
 	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
+	var batchJob *batchv1.Job
+
 	// create job with service account if specified in the config
 	if conf.ServiceAccountName != nil {
 		var saName string = *conf.ServiceAccountName
 
 		// For an example of how to create jobs, see this file:
 		// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-		batchJob := &batchv1.Job{
+		batchJob = &batchv1.Job{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Job",
 				APIVersion: "v1",
@@ -219,7 +221,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	} else {
 		// For an example of how to create jobs, see this file:
 		// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-		batchJob := &batchv1.Job{
+		batchJob = &batchv1.Job{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Job",
 				APIVersion: "v1",
@@ -273,7 +275,6 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 			},
 		}
 	}
-
 
 	newJob, err := jobsClient.Create(batchJob)
 	if err != nil {
