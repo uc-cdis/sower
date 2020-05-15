@@ -219,6 +219,11 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 		batchJob.Spec.Template.Spec.ServiceAccountName = saName
 	}
 
+	if conf.ActiveDeadlineSeconds != nil {
+		var deadline int64 = *conf.ActiveDeadlineSeconds
+		batchJob.Spec.ActiveDeadlineSeconds = &deadline
+	}
+
 	newJob, err := jobsClient.Create(batchJob)
 	if err != nil {
 		return nil, err
