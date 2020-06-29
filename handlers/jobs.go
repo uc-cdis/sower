@@ -117,7 +117,7 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 	var actions = filter(availableActions, getCurrentAction)
 
 	if len(actions) != 1 {
-		fmt.Println("Incorrect action requested")
+		fmt.Println("ERROR: There is a duplicate in sower config")
 		return nil, nil
 	}
 
