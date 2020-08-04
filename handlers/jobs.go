@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"html"
 	"io"
 	"math/rand"
 	"os"
@@ -285,7 +284,7 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error copying output")
 	}
-	str := html.UnescapeString(buf.String())
+	str := buf.String()
 	fmt.Println("======================================================")
 	fmt.Println(str)
 	fmt.Println("======================================================")

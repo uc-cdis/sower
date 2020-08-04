@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/apex/log"
@@ -114,6 +115,7 @@ func output(w http.ResponseWriter, r *http.Request) {
 		newLineSep := func(c rune) bool {
 			return c == '\n'
 		}
+		result.Output, _ = strconv.Unquote(result.Output)
 		logLines := strings.FieldsFunc(result.Output, newLineSep)
 		for _, logLine := range logLines {
 			if strings.Contains(logLine, "[out] ") {
