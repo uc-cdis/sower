@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"html"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -115,17 +114,10 @@ func output(w http.ResponseWriter, r *http.Request) {
 		newLineSep := func(c rune) bool {
 			return c == '\n'
 		}
-		fmt.Println("==============2===============")
-		fmt.Println(result.Output)
-		fmt.Println("===============2==============")
 		logLines := strings.FieldsFunc(result.Output, newLineSep)
 		for _, logLine := range logLines {
 			if strings.Contains(logLine, "[out] ") {
-				escapeResLine := strings.Replace(logLine, "[out] ", "", -1)
-				fmt.Println("==============3===============")
-				resLine = html.UnescapeString(escapeResLine)
-				fmt.Println("===============3==============")
-
+				resLine = strings.Replace(logLine, "[out] ", "", -1)
 			}
 		}
 
@@ -137,6 +129,9 @@ func output(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		fmt.Println("=======aa====")
+		fmt.Println(string(res))
+		fmt.Println("=======aa====")
 
 		fmt.Fprint(w, string(res))
 	} else {
