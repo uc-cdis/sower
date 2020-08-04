@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/apex/log"
@@ -115,15 +114,17 @@ func output(w http.ResponseWriter, r *http.Request) {
 		newLineSep := func(c rune) bool {
 			return c == '\n'
 		}
+		fmt.Println("==============2===============")
 		fmt.Println(result.Output)
-		result.Output, _ = strconv.Unquote(result.Output)
-		fmt.Println("=============================")
-		fmt.Println(result.Output)
-		fmt.Println("=============================")
+		fmt.Println("===============2==============")
 		logLines := strings.FieldsFunc(result.Output, newLineSep)
 		for _, logLine := range logLines {
 			if strings.Contains(logLine, "[out] ") {
 				resLine = strings.Replace(logLine, "[out] ", "", -1)
+				fmt.Println("==============3===============")
+				fmt.Println(resLine)
+				fmt.Println("===============3==============")
+
 			}
 		}
 
