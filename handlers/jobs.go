@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	batchtypev1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+	"k8s.io/client-go/rest"
 )
 
 var kubectlNamespace = os.Getenv("POD_NAMESPACE")
