@@ -286,9 +286,7 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 		return nil, fmt.Errorf("Error copying output")
 	}
 	str := html.UnescapeString(buf.String())
-	fmt.Println("======================================================")
 	fmt.Println(str)
-	fmt.Println("======================================================")
 
 	ji := JobOutput{}
 	ji.Output = str
