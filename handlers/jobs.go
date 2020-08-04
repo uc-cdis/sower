@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"math/rand"
 	"os"
@@ -16,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	batchtypev1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+	"k8s.io/client-go/rest"
 )
 
 var kubectlNamespace = os.Getenv("POD_NAMESPACE")
@@ -283,7 +285,7 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error copying output")
 	}
-	str := buf.String()
+	str := html.UnescapeString(buf.String())
 	fmt.Println("======================================================")
 	fmt.Println(str)
 	fmt.Println("======================================================")
