@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"math/rand"
 	"os"
@@ -31,6 +33,14 @@ type JobInfo struct {
 // JobOutput to return job output
 type JobOutput struct {
 	Output string `json:"output"`
+}
+
+func (t *JobOutput) JSON() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(t)
+	return buffer.Bytes(), err
 }
 
 func getJobClient() batchtypev1.JobInterface {
@@ -284,7 +294,8 @@ func getJobLogs(jobid string) (*JobOutput, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error copying output")
 	}
-	str := buf.String()
+	str := html.UnescapeString(buf.String())
+	fmt.Println(str)
 
 	ji := JobOutput{}
 	ji.Output = str

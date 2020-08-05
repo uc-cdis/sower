@@ -124,7 +124,7 @@ func output(w http.ResponseWriter, r *http.Request) {
 		jsonResLine := JobOutput{}
 		jsonResLine.Output = resLine
 
-		res, err := json.Marshal(jsonResLine)
+		res, err := jsonResLine.JSON()
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
