@@ -121,23 +121,23 @@ func output(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// jsonResLine := JobOutput{}
-		// jsonResLine.Output = resLine
+		jsonResLine := JobOutput{}
+		jsonResLine.Output = resLine
 
-		// fmt.Println("=======resLine====")
-		// fmt.Println(resLine)
-		// fmt.Println("=======resLine====")
+		fmt.Println("=======resLine====")
+		fmt.Println(resLine)
+		fmt.Println("=======resLine====")
 
-		// res, err := json.Marshal(jsonResLine)
-		// if err != nil {
-		// 	http.Error(w, err.Error(), 500)
-		// 	return
-		// }
-		// fmt.Println("=======res====")
-		// fmt.Println(string(res))
-		// fmt.Println("=======res====")
+		res, err := jsonResLine.JSON()
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		fmt.Println("=======res====")
+		fmt.Println(string(res))
+		fmt.Println("=======res====")
 
-		fmt.Fprint(w, resLine)
+		fmt.Fprint(w, string(res))
 	} else {
 		http.Error(w, "Missing UID argument", 300)
 		return

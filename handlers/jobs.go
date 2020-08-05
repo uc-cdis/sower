@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -31,6 +32,14 @@ type JobInfo struct {
 // JobOutput to return job output
 type JobOutput struct {
 	Output string `json:"output"`
+}
+
+func (t *JobOutput) JSON() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(t)
+	return buffer.Bytes(), err
 }
 
 func getJobClient() batchtypev1.JobInterface {
