@@ -121,8 +121,8 @@ func output(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		jsonResLine := JobOutput{}
-		jsonResLine.Output = resLine
+		// jsonResLine := JobOutput{}
+		// jsonResLine.Output = resLine
 
 		// fmt.Println("=======resLine====")
 		// fmt.Println(resLine)
