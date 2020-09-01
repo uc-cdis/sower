@@ -131,6 +131,8 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 		return nil, nil
 	}
 
+	fmt.Println("currentAction: ", currentAction)
+
 	var conf = actions[0]
 
 	fmt.Println("config: ", conf)

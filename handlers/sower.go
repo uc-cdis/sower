@@ -46,6 +46,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	_ = json.Unmarshal(inputDataStr, &inputRequest)
 
 	var currentAction = inputRequest.Action
+	fmt.Println("currentAction: ", currentAction)
+	fmt.Println("inputRequest.Input: ", inputRequest.Input)
 
 	out, err := json.Marshal(inputRequest.Input)
 	if err != nil {
