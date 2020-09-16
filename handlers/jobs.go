@@ -159,8 +159,8 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 		},
 		{
 			Name: "ACCESS_FORMAT",
-			Value: accessFormat
-		}
+			Value: accessFormat,
+		},
 	}
 	env = append(env, conf.Container.Env...)
 
