@@ -48,10 +48,10 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var currentAction = inputRequest.Action
 
-	if inputRequest.Format == nil{
-		var accessFormat = "presigned-url"
-	} else
-		var accessFormat = inputRequest.Format
+	var accessFormat string = "presigned-url"
+
+	if inputRequest.Format != ""{
+		accessFormat = inputRequest.Format
 	}
 
 	out, err := json.Marshal(inputRequest.Input)
