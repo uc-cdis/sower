@@ -48,7 +48,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var currentAction = inputRequest.Action
 
-	var accessFormat string = "presigned-url"
+	var accessFormat string = "presigned_url"
 
 	if inputRequest.Format != ""{
 		accessFormat = inputRequest.Format
