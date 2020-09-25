@@ -121,7 +121,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(currentAction string, inputData string, accessToken string, userName string) (*JobInfo, error) {
+func createK8sJob(currentAction string, inputData string, accessFormat string, accessToken string, userName string) (*JobInfo, error) {
 	var availableActions = loadSowerConfigs("/sower_config.json")
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
@@ -156,6 +156,10 @@ func createK8sJob(currentAction string, inputData string, accessToken string, us
 		{
 			Name:  "ACCESS_TOKEN",
 			Value: accessToken,
+		},
+		{
+			Name: "ACCESS_FORMAT",
+			Value: accessFormat,
 		},
 	}
 	env = append(env, conf.Container.Env...)

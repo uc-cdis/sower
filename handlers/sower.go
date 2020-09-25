@@ -21,6 +21,7 @@ func RegisterSower() {
 type InputRequest struct {
 	Action string                 `json:"action"`
 	Input  map[string]interface{} `json:"input"`
+	Format string                 `json:"access_format"` 
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +48,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var currentAction = inputRequest.Action
 
+	var accessFormat string = "presigned_url"
+
+	if inputRequest.Format != ""{
+		accessFormat = inputRequest.Format
+	}
+
 	out, err := json.Marshal(inputRequest.Input)
 	if err != nil {
 		panic(err)
@@ -59,7 +66,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	result, err := createK8sJob(currentAction, string(out), accessTokenVal, userName)
+	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
