@@ -21,7 +21,7 @@ func RegisterSower() {
 type InputRequest struct {
 	Action string                 `json:"action"`
 	Input  map[string]interface{} `json:"input"`
-	Format string                 `json:"access_format"` 
+	Format string                 `json:"access_format"`
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request) {
