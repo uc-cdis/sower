@@ -1,4 +1,4 @@
-FROM golang:1.12-stretch as build-deps
+FROM quay.io/cdis/golang:1.12-stretch as build-deps
 
 WORKDIR $GOPATH/src/github.com/uc-cdis/sower/
 
