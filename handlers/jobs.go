@@ -126,7 +126,10 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
 
-	if len(actions) != 1 {
+	if len(actions) == 0 {
+		fmt.Println("ERROR: %V is not in sower config", currentAction)
+		return nil, nil
+	} else if len(actions) != 1 {
 		fmt.Println("ERROR: There is a duplicate in sower config")
 		return nil, nil
 	}
