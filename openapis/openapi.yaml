@@ -51,11 +51,11 @@ paths:
       operationId: status
       parameters:
       - in: "query"
-        name: "uid"
+        name: "UID"
         description: "Job UID"
         required: true
         schema:
-          type: "integer"
+          type: "string"
       responses:
         200:
           description: job status
@@ -84,6 +84,13 @@ paths:
       - sower
       summary: Get the output of the job run
       operationId: output
+      parameters:
+      - in: "query"
+        name: "UID"
+        description: "Job UID"
+        required: true
+        schema:
+          type: "string"
       responses:
         200:
           description: result of the job execution
