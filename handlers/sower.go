@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/apex/log"
@@ -131,7 +132,7 @@ func output(w http.ResponseWriter, r *http.Request) {
 		jsonResLine := JobOutput{}
 		jsonResLine.Output = resLine
 
-		fmt.Printf("DOING OUTPUT %v", resLine)
+		fmt.Fprintln(os.Stdout, "DOING OUTPUT ", resLine)
 
 		res, err := jsonResLine.JSON()
 		if err != nil {
