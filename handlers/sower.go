@@ -50,7 +50,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var accessFormat string = "presigned_url"
 
-	if inputRequest.Format != ""{
+	if inputRequest.Format != "" {
 		accessFormat = inputRequest.Format
 	}
 
@@ -130,6 +130,8 @@ func output(w http.ResponseWriter, r *http.Request) {
 
 		jsonResLine := JobOutput{}
 		jsonResLine.Output = resLine
+
+		fmt.Println("DOING OUTPUT")
 
 		res, err := jsonResLine.JSON()
 		if err != nil {
