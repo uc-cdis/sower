@@ -131,7 +131,7 @@ func output(w http.ResponseWriter, r *http.Request) {
 		jsonResLine := JobOutput{}
 		jsonResLine.Output = resLine
 
-		fmt.Println("DOING OUTPUT")
+		fmt.Printf("DOING OUTPUT %v", resLine)
 
 		res, err := jsonResLine.JSON()
 		if err != nil {
