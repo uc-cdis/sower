@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/golang-jwt/jwt"
 )
 
 func RegisterSower() {
@@ -50,7 +51,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var accessFormat string = "presigned_url"
 
-	if inputRequest.Format != ""{
+	if inputRequest.Format != "" {
 		accessFormat = inputRequest.Format
 	}
 
@@ -66,7 +67,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName)
+	email := getEmailFromToken(accessTokenVal)
+
+	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName, email)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -81,9 +84,11 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
+	email := ""
+
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
-		result, errUID := getJobStatusByID(UID)
+		result, errUID := getJobStatusByID(UID, email)
 		if errUID != nil {
 			http.Error(w, errUID.Error(), 500)
 			return
@@ -103,9 +108,18 @@ func status(w http.ResponseWriter, r *http.Request) {
 }
 
 func output(w http.ResponseWriter, r *http.Request) {
+	accessToken := getBearerToken(r)
+
+	accessTokenVal := ""
+	if accessToken != nil {
+		accessTokenVal = *accessToken
+	}
+
+	email := getEmailFromToken(accessTokenVal)
+
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
-		result, errUID := getJobLogs(UID)
+		result, errUID := getJobLogs(UID, email)
 		if errUID != nil {
 			http.Error(w, errUID.Error(), 500)
 			return
@@ -145,7 +159,16 @@ func output(w http.ResponseWriter, r *http.Request) {
 }
 
 func list(w http.ResponseWriter, r *http.Request) {
-	result := listJobs(getJobClient())
+	accessToken := getBearerToken(r)
+
+	accessTokenVal := ""
+	if accessToken != nil {
+		accessTokenVal = *accessToken
+	}
+
+	email := getEmailFromToken(accessTokenVal)
+
+	result := listJobs(getJobClient(), email)
 
 	out, err := json.Marshal(result)
 	if err != nil {
@@ -167,4 +190,30 @@ func getBearerToken(r *http.Request) *string {
 		return &s[1]
 	}
 	return nil
+}
+
+func getEmailFromToken(accessTokenVal string) string {
+	var hmacSampleSecret []byte
+	token, err := jwt.Parse(accessTokenVal, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return hmacSampleSecret, nil
+	})
+
+	email := "bad email"
+	// the check should be
+	// ok && token.Valid
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		fmt.Println(claims["context"])
+		context := claims["context"].(map[string]interface{})
+		user := context["user"].(map[string]interface{})
+		email = user["name"].(string)
+	} else {
+		fmt.Println(err)
+	}
+	return strings.ReplaceAll(email, "@", "_")
 }

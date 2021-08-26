@@ -58,12 +58,19 @@ func getJobClient() batchtypev1.JobInterface {
 	return jobClient
 }
 
-func getJobByID(jobid string) (*batchv1.Job, error) {
+func getJobByID(jobid string, email string) (*batchv1.Job, error) {
 	log.WithField("jobid", jobid).Debug("Get Job By ID")
 
 	jc := getJobClient()
 
-	jobs, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
+	labelSelector := ""
+	if email == "" { // this is needed for StartMonitoringProcess function only
+		labelSelector = fmt.Sprintf("app=%s", "sowerjob")
+	} else {
+		labelSelector = fmt.Sprintf("app=%s,email=%s", "sowerjob", email)
+	}
+
+	jobs, err := jc.List(metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +82,10 @@ func getJobByID(jobid string) (*batchv1.Job, error) {
 	return nil, fmt.Errorf("job with jobid %s not found", jobid)
 }
 
-func getJobStatusByID(jobid string) (*JobInfo, error) {
+func getJobStatusByID(jobid string, email string) (*JobInfo, error) {
 	log.WithField("jobid", jobid).Debug("Get Job Status By ID")
 
-	job, err := getJobByID(jobid)
+	job, err := getJobByID(jobid, email)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +93,12 @@ func getJobStatusByID(jobid string) (*JobInfo, error) {
 	return &ji, nil
 }
 
-func listJobs(jc batchtypev1.JobInterface) []JobInfo {
+func listJobs(jc batchtypev1.JobInterface, email string) []JobInfo {
 	jobs := []JobInfo{}
 
-	jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
+	labelSelector := fmt.Sprintf("app=%s,email=%s", "sowerjob", email)
+
+	jobsList, err := jc.List(metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return jobs
 	}
@@ -121,7 +130,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(currentAction string, inputData string, accessFormat string, accessToken string, userName string) (*JobInfo, error) {
+func createK8sJob(currentAction string, inputData string, accessFormat string, accessToken string, userName string, email string) (*JobInfo, error) {
 	var availableActions = loadSowerConfigs("/sower_config.json")
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
@@ -146,6 +155,8 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
+	labels["email"] = email
+
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
 
@@ -161,7 +172,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 			Value: accessToken,
 		},
 		{
-			Name: "ACCESS_FORMAT",
+			Name:  "ACCESS_FORMAT",
 			Value: accessFormat,
 		},
 	}
@@ -243,6 +254,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 
 	newJob, err := jobsClient.Create(batchJob)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	fmt.Println("New job name: ", newJob.Name)
@@ -270,8 +282,8 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 	return nil
 }
 
-func getJobLogs(jobid string) (*JobOutput, error) {
-	job, err := getJobByID(jobid)
+func getJobLogs(jobid string, username string) (*JobOutput, error) {
+	job, err := getJobByID(jobid, username)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +352,7 @@ func StartMonitoringProcess() {
 		}
 
 		for _, job := range jobsList.Items {
-			k8sJob, err := getJobStatusByID(string(job.GetUID()))
+			k8sJob, err := getJobStatusByID(string(job.GetUID()), "")
 			if err != nil {
 				fmt.Println("Can't get job status by UID: ", job.Name, err)
 			} else {
