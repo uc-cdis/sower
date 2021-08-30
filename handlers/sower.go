@@ -221,9 +221,9 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		context := claims["context"].(map[string]interface{})
 		user := context["user"].(map[string]interface{})
-		email := user["name"].(string)
-		email = strings.ReplaceAll(email, "@", "_")
-		return email, nil
+		username := user["name"].(string)
+		username = strings.ReplaceAll(username, "@", "_")
+		return username, nil
 	} else {
 		fmt.Println(err)
 		return "", err
