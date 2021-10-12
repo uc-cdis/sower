@@ -1,5 +1,10 @@
 FROM quay.io/cdis/golang:1.12-stretch as build-deps
 
+RUN apt-get update \
+    && apt-get install --only-upgrade -y --no-install-recommends ca-certificates=2020* libgnutls30=3.* \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/
+
 WORKDIR $GOPATH/src/github.com/uc-cdis/sower/
 
 COPY go.mod .
