@@ -212,7 +212,7 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 		return "", err
 	}
 
-	token, err := jwt.Parse(accessTokenVal, jwks.KeyFunc)
+	token, err := jwt.Parse(accessTokenVal, jwks.Keyfunc)
 	if err != nil {
 		log.Fatalf("Failed to parse the JWT.\nError: %s", err.Error())
 		return "", err
