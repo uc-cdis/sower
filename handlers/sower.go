@@ -225,7 +225,6 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 		username = strings.ReplaceAll(username, "@", "_")
 		return username, nil
 	} else {
-		fmt.Println(err)
-		return "", err
+		return "", nil
 	}
 }
