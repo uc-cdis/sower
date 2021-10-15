@@ -24,5 +24,6 @@ RUN COMMIT=$(git rev-parse HEAD); \
     && go build -o /sower
 
 FROM scratch
+COPY --from=build-deps /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build-deps /sower /sower
 CMD ["/sower"]
