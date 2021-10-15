@@ -13,15 +13,11 @@ RUN go mod download
 
 COPY . .
 
-RUN COMMIT=$(git rev-parse HEAD); \
-    VERSION=$(git describe --always --tags); \
-    printf '%s\n' 'package handlers'\
-    ''\
-    'const ('\
-    '    gitcommit="'"${COMMIT}"'"'\
-    '    gitversion="'"${VERSION}"'"'\
-    ')' > handlers/gitversion.go \
-    && go build -o /sower
+RUN GITCOMMIT=$(git rev-parse HEAD) \
+    GITVERSION=$(git describe --always --tags) \
+    && go build \
+    -ldflags="-X 'github.com/uc-cdis/sower/handlers/version.GitCommit=${GITCOMMIT}' -X 'github.com/uc-cdis/sower/handlers/version.GitVersion=${GITVERSION}'" \
+    -o /sower
 
 FROM scratch
 COPY --from=build-deps /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
