@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/MicahParks/keyfunc"
 	"github.com/apex/log"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func RegisterSower() {
@@ -67,7 +68,10 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email := getEmailFromToken(accessTokenVal)
+	email, err := getEmailFromToken(accessTokenVal)
+	if err != nil {
+		panic(err)
+	}
 
 	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName, email)
 	if err != nil {
@@ -115,7 +119,10 @@ func output(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email := getEmailFromToken(accessTokenVal)
+	email, err := getEmailFromToken(accessTokenVal)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
@@ -166,7 +173,10 @@ func list(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email := getEmailFromToken(accessTokenVal)
+	email, err := getEmailFromToken(accessTokenVal)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	result := listJobs(getJobClient(), email)
 
@@ -192,28 +202,29 @@ func getBearerToken(r *http.Request) *string {
 	return nil
 }
 
-func getEmailFromToken(accessTokenVal string) string {
-	var hmacSampleSecret []byte
-	token, err := jwt.Parse(accessTokenVal, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
+func getEmailFromToken(accessTokenVal string) (string, error) {
+	jwksURL := "http://fence-service/.well-known/openid-configuration"
 
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return hmacSampleSecret, nil
-	})
+	// create the JWKS from the resource at the given URL
+	jwks, err := keyfunc.Get(jwksURL)
+	if err != nil {
+		log.Fatalf("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
+		return "", err
+	}
 
-	email := "bad email"
-	// the check should be
-	// ok && token.Valid
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		fmt.Println(claims["context"])
+	token, err := jwt.Parse(accessTokenVal, jwks.Keyfunc)
+	if err != nil {
+		log.Fatalf("Failed to parse the JWT.\nError: %s", err.Error())
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		context := claims["context"].(map[string]interface{})
 		user := context["user"].(map[string]interface{})
-		email = user["name"].(string)
+		username := user["name"].(string)
+		username = strings.ReplaceAll(username, "@", "_")
+		return username, nil
 	} else {
-		fmt.Println(err)
+		return "", nil
 	}
-	return strings.ReplaceAll(email, "@", "_")
 }
