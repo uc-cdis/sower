@@ -191,7 +191,6 @@ func list(w http.ResponseWriter, r *http.Request) {
 
 func getBearerToken(r *http.Request) *string {
 	authHeader := r.Header.Get("Authorization")
-	fmt.Println("header: ", authHeader)
 	if authHeader == "" {
 		return nil
 	}
