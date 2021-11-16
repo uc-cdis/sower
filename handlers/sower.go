@@ -207,13 +207,13 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 	// create the JWKS from the resource at the given URL
 	jwks, err := keyfunc.Get(jwksURL)
 	if err != nil {
-		log.Println("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
+		log.Debug("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
 		return "", err
 	}
 
 	token, err := jwt.Parse(accessTokenVal, jwks.Keyfunc)
 	if err != nil {
-		log.Println("Failed to parse the JWT.\nError: %s", err.Error())
+		log.Debug("Failed to parse the JWT.\nError: %s", err.Error())
 		return "", err
 	}
 
