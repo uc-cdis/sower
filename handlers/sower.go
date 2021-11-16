@@ -191,7 +191,6 @@ func list(w http.ResponseWriter, r *http.Request) {
 
 func getBearerToken(r *http.Request) *string {
 	authHeader := r.Header.Get("Authorization")
-	fmt.Println("header: ", authHeader)
 	if authHeader == "" {
 		return nil
 	}
@@ -208,13 +207,13 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 	// create the JWKS from the resource at the given URL
 	jwks, err := keyfunc.Get(jwksURL)
 	if err != nil {
-		log.Fatalf("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
+		log.Debug("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
 		return "", err
 	}
 
 	token, err := jwt.Parse(accessTokenVal, jwks.Keyfunc)
 	if err != nil {
-		log.Fatalf("Failed to parse the JWT.\nError: %s", err.Error())
+		log.Debug("Failed to parse the JWT.\nError: %s", err.Error())
 		return "", err
 	}
 
