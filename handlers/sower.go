@@ -202,7 +202,7 @@ func getBearerToken(r *http.Request) *string {
 }
 
 func getEmailFromToken(accessTokenVal string) (string, error) {
-	jwksURL := "http://fence-service/.well-known/openid-configuration"
+	jwksURL := "http://fence-service/.well-known/jwks"
 
 	// create the JWKS from the resource at the given URL
 	jwks, err := keyfunc.Get(jwksURL)
