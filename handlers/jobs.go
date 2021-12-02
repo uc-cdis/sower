@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -51,6 +52,9 @@ func getJobClient() batchtypev1.JobInterface {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 	// Access jobs. We can't do it all in one line, since we need to receive the
 	// errors and manage thgem appropriately
 	batchClient := clientset.BatchV1()
@@ -58,19 +62,19 @@ func getJobClient() batchtypev1.JobInterface {
 	return jobClient
 }
 
-func getJobByID(jobid string, email string) (*batchv1.Job, error) {
+func getJobByID(jobid string, username string) (*batchv1.Job, error) {
 	log.WithField("jobid", jobid).Debug("Get Job By ID")
 
 	jc := getJobClient()
 
 	labelSelector := ""
-	if email == "" { // this is needed for StartMonitoringProcess function only
+	if username == "" { // this is needed for StartMonitoringProcess function only
 		labelSelector = fmt.Sprintf("app=%s", "sowerjob")
 	} else {
-		labelSelector = fmt.Sprintf("app=%s,email=%s", "sowerjob", email)
+		labelSelector = fmt.Sprintf("app=%s,username=%s", "sowerjob", username)
 	}
 
-	jobs, err := jc.List(metav1.ListOptions{LabelSelector: labelSelector})
+	jobs, err := jc.List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return nil, err
 	}
@@ -82,10 +86,10 @@ func getJobByID(jobid string, email string) (*batchv1.Job, error) {
 	return nil, fmt.Errorf("job with jobid %s not found", jobid)
 }
 
-func getJobStatusByID(jobid string, email string) (*JobInfo, error) {
+func getJobStatusByID(jobid string, username string) (*JobInfo, error) {
 	log.WithField("jobid", jobid).Debug("Get Job Status By ID")
 
-	job, err := getJobByID(jobid, email)
+	job, err := getJobByID(jobid, username)
 	if err != nil {
 		return nil, err
 	}
@@ -93,12 +97,12 @@ func getJobStatusByID(jobid string, email string) (*JobInfo, error) {
 	return &ji, nil
 }
 
-func listJobs(jc batchtypev1.JobInterface, email string) []JobInfo {
+func listJobs(jc batchtypev1.JobInterface, username string) []JobInfo {
 	jobs := []JobInfo{}
 
-	labelSelector := fmt.Sprintf("app=%s,email=%s", "sowerjob", email)
+	labelSelector := fmt.Sprintf("app=%s,username=%s", "sowerjob", username)
 
-	jobsList, err := jc.List(metav1.ListOptions{LabelSelector: labelSelector})
+	jobsList, err := jc.List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return jobs
 	}
@@ -117,7 +121,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 		return "Unknown"
 	}
 
-	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#jobstatus-v1-batch
+	// https://pkg.go.dev/k8s.io/api/batch/v1#JobStatus
 	if status.Active >= 1 {
 		return "Running"
 	}
@@ -130,7 +134,7 @@ func jobStatusToString(status *batchv1.JobStatus) string {
 	return "Unknown"
 }
 
-func createK8sJob(currentAction string, inputData string, accessFormat string, accessToken string, userName string, email string) (*JobInfo, error) {
+func createK8sJob(currentAction string, inputData string, accessFormat string, accessToken string, userName string, username string) (*JobInfo, error) {
 	var availableActions = loadSowerConfigs("/sower_config.json")
 	var getCurrentAction = func(s SowerConfig) bool { return s.Action == currentAction }
 	var actions = filter(availableActions, getCurrentAction)
@@ -155,7 +159,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var backoff int32 = 1
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
-	labels["email"] = email
+	labels["username"] = username
 
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
@@ -252,7 +256,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 		batchJob.Spec.ActiveDeadlineSeconds = &deadline
 	}
 
-	newJob, err := jobsClient.Create(batchJob)
+	newJob, err := jobsClient.Create(context.TODO(), batchJob, metav1.CreateOptions{})
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -273,7 +277,7 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
-	pods, err := clientset.CoreV1().Pods(kubectlNamespace).List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(kubectlNamespace).List(context.TODO(), metav1.ListOptions{})
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, jobname) {
 			return &pod
@@ -302,7 +306,7 @@ func getJobLogs(jobid string, username string) (*JobOutput, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	podLogOptions := k8sv1.PodLogOptions{}
 	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
-	podLogs, err := req.Stream()
+	podLogs, err := req.Stream(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +347,7 @@ func StartMonitoringProcess() {
 	var deletionPropagation metav1.DeletionPropagation = "Background"
 	deleteOption.PropagationPolicy = &deletionPropagation
 	for {
-		jobsList, err := jc.List(metav1.ListOptions{LabelSelector: "app=sowerjob"})
+		jobsList, err := jc.List(context.TODO(), metav1.ListOptions{LabelSelector: "app=sowerjob"})
 
 		if err != nil {
 			fmt.Println("Monitoring error: ", err)
@@ -361,7 +365,7 @@ func StartMonitoringProcess() {
 				} else {
 					if jobOlderThan(&job.Status, 1800) {
 						fmt.Println("Deleting old job: ", job.Name)
-						if err = jc.Delete(job.Name, deleteOption); err != nil {
+						if err = jc.Delete(context.TODO(), job.Name, *deleteOption); err != nil {
 							fmt.Println("Error deleting job : ", job.Name, err)
 						}
 					}

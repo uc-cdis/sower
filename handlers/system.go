@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/uc-cdis/sower/handlers/version"
 )
 
 type versionSummary struct {
@@ -21,7 +23,7 @@ func systemStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func systemVersion(w http.ResponseWriter, r *http.Request) {
-	ver := versionSummary{Commit: gitcommit, Version: gitversion}
+	ver := versionSummary{Commit: version.GitCommit, Version: version.GitVersion}
 	out, err := json.Marshal(ver)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
