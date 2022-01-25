@@ -205,7 +205,7 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 	jwksURL := "http://fence-service/.well-known/jwks"
 
 	// create the JWKS from the resource at the given URL
-	jwks, err := keyfunc.Get(jwksURL)
+	jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{})
 	if err != nil {
 		log.Debugf("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
 		return "", err
