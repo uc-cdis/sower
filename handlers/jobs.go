@@ -377,3 +377,16 @@ func StartMonitoringProcess() {
 		time.Sleep(30 * time.Second)
 	}
 }
+
+func deleteJob(UID string, username string) error {
+	jc := getJobClient()
+	deleteOption := metav1.NewDeleteOptions(120)
+	var deletionPropagation metav1.DeletionPropagation = "Background"
+	deleteOption.PropagationPolicy = &deletionPropagation
+	if job, err := getJobByID(UID, username); err != nil {
+		return err
+	} else if err = jc.Delete(context.TODO(), job.Name, *deleteOption); err != nil {
+		return err
+	}
+	return nil
+}

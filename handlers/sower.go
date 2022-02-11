@@ -17,6 +17,7 @@ func RegisterSower() {
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/list", list)
 	http.HandleFunc("/output", output)
+	http.HandleFunc("/delete", delete)
 }
 
 // InputRequest Struct
@@ -187,6 +188,31 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, string(out))
+}
+
+func delete(w http.ResponseWriter, r *http.Request) {
+	accessToken := getBearerToken(r)
+
+	accessTokenVal := ""
+	if accessToken != nil {
+		accessTokenVal = *accessToken
+	}
+
+	email, err := getEmailFromToken(accessTokenVal)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	UID := r.URL.Query().Get("UID")
+	if UID != "" {
+		if deleteJob(UID, email) != nil {
+			http.Error(w, "failed to delete job", 500)
+		}
+	} else {
+		http.Error(w, "Missing UID argument", 300)
+		return
+	}
+
 }
 
 func getBearerToken(r *http.Request) *string {
