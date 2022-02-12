@@ -205,8 +205,8 @@ func delete(w http.ResponseWriter, r *http.Request) {
 
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
-		if deleteJob(UID, email) != nil {
-			http.Error(w, "failed to delete job", 500)
+		if err = deleteJob(UID, email); err != nil {
+			http.Error(w, fmt.Sprintf("failed to delete job %v", err.Error()), 500)
 		}
 	} else {
 		http.Error(w, "Missing UID argument", 300)
