@@ -19,7 +19,7 @@ func RegisterSystem() {
 }
 
 func systemStatus(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Healthy")
+	fmt.Fprint(w, "Healthy")
 }
 
 func systemVersion(w http.ResponseWriter, r *http.Request) {
@@ -30,5 +30,5 @@ func systemVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(out))
+	fmt.Fprint(w, string(out))
 }
