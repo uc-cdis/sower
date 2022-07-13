@@ -188,11 +188,9 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var volumeMounts []k8sv1.VolumeMount
 	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
-	var batchJob *batchv1.Job
-
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-	batchJob = &batchv1.Job{
+	var batchJob *batchv1.Job = &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
 			APIVersion: "v1",
