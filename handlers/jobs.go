@@ -188,11 +188,9 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var volumeMounts []k8sv1.VolumeMount
 	volumeMounts = append(volumeMounts, conf.Container.VolumesMounts...)
 
-	var batchJob *batchv1.Job
-
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-	batchJob = &batchv1.Job{
+	var batchJob *batchv1.Job = &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
 			APIVersion: "v1",
@@ -277,7 +275,13 @@ func getPodMatchingJob(jobname string) *k8sv1.Pod {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Errorf("Failed to create clientset.\nError: %s", err.Error())
+	}
 	pods, err := clientset.CoreV1().Pods(kubectlNamespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		log.Errorf("Failed to create pods.\nError: %s", err.Error())
+	}
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, jobname) {
 			return &pod
@@ -304,6 +308,9 @@ func getJobLogs(jobid string, username string) (*JobOutput, error) {
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Errorf("Failed to create clientset.\nError: %s", err.Error())
+	}
 	podLogOptions := k8sv1.PodLogOptions{}
 	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
 	podLogs, err := req.Stream(context.TODO())

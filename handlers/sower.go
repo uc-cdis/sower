@@ -84,7 +84,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(out))
+	fmt.Fprint(w, string(out))
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +186,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(out))
+	fmt.Fprint(w, string(out))
 }
 
 func getBearerToken(r *http.Request) *string {
