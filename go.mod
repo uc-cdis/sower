@@ -1,6 +1,6 @@
 module github.com/uc-cdis/sower
 
-go 1.17
+go 1.20
 
 require (
 	github.com/MicahParks/keyfunc v1.0.1
