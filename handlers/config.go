@@ -28,6 +28,7 @@ type SowerConfig struct {
 	RestartPolicy         k8sv1.RestartPolicy `json:"restart_policy"`
 	ServiceAccountName    *string             `json:"serviceAccountName"`
 	ActiveDeadlineSeconds *int64              `json:"activeDeadlineSeconds"`
+	TTLSecondsAfterFinished *int32              `json:"ttlSecondsAfterFinished"`
 }
 
 func loadSowerConfigs(config string) []SowerConfig {
