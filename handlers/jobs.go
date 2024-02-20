@@ -160,6 +160,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
 	labels["username"] = username
+	labels["internet"] = "yes"
 
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
