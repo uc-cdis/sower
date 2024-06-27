@@ -157,6 +157,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	fmt.Println("input data: ", inputData)
 	var deadline int64 = 7200
 	var backoff int32 = 1
+	var ttl int32 = 3600 // Keep job pods for 1 hour by default
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
 	labels["username"] = username
@@ -209,10 +210,12 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 			// Optional: Parallelism:,
 			// Optional: Completions:,
 			// Optional: ActiveDeadlineSeconds:,
+			// Optional: TTLSecondsAfterFinished:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
 			BackoffLimit:          &backoff,
 			ActiveDeadlineSeconds: &deadline,
+			TTLSecondsAfterFinished: &ttl,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   name,
@@ -257,6 +260,11 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	if conf.ActiveDeadlineSeconds != nil {
 		var deadline int64 = *conf.ActiveDeadlineSeconds
 		batchJob.Spec.ActiveDeadlineSeconds = &deadline
+	}
+
+	if conf.TTLSecondsAfterFinished != nil {
+		var ttl int32 = *conf.TTLSecondsAfterFinished
+		batchJob.Spec.TTLSecondsAfterFinished = &ttl
 	}
 
 	newJob, err := jobsClient.Create(context.TODO(), batchJob, metav1.CreateOptions{})
