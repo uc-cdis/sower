@@ -16,7 +16,7 @@ import (
 func main() {
 	log.SetHandler(text.New(os.Stderr))
 
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	log.Info("Server started")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
