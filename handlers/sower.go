@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -35,7 +35,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	accessToken := getBearerToken(r)
 
-	inputDataStr, err := ioutil.ReadAll(r.Body)
+	inputDataStr, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
 	if err != nil {

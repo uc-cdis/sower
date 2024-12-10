@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	k8sv1 "k8s.io/api/core/v1"
 )
@@ -22,18 +22,18 @@ type Container struct {
 
 // SowerConfig Struct to hold all the configuration
 type SowerConfig struct {
-	Name                  string              `json:"name"`
-	Action                string              `json:"action"`
-	Container             Container           `json:"container"`
-	Volumes               []k8sv1.Volume      `json:"volumes"`
-	RestartPolicy         k8sv1.RestartPolicy `json:"restart_policy"`
-	ServiceAccountName    *string             `json:"serviceAccountName"`
-	ActiveDeadlineSeconds *int64              `json:"activeDeadlineSeconds"`
+	Name                    string              `json:"name"`
+	Action                  string              `json:"action"`
+	Container               Container           `json:"container"`
+	Volumes                 []k8sv1.Volume      `json:"volumes"`
+	RestartPolicy           k8sv1.RestartPolicy `json:"restart_policy"`
+	ServiceAccountName      *string             `json:"serviceAccountName"`
+	ActiveDeadlineSeconds   *int64              `json:"activeDeadlineSeconds"`
 	TTLSecondsAfterFinished *int32              `json:"ttlSecondsAfterFinished"`
 }
 
 func loadSowerConfigs(config string) []SowerConfig {
-	plan, _ := ioutil.ReadFile(config)
+	plan, _ := os.ReadFile(config)
 	var data []SowerConfig
 	err := json.Unmarshal(plan, &data)
 	if err != nil {
