@@ -234,7 +234,6 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 			// Client token
 			return claims["azp"].(string), nil
 		}
-	} else {
-		return "", nil
 	}
+	return "", nil
 }
