@@ -217,13 +217,23 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 		return "", err
 	}
 
+	// Verify if sub field exists, to identify if it is a user token or a client token
+	// If sub exists, it is a user token, so we extract the email from the context field
+	// Else-If azp exists, it is a client token, so we extract the client id from the azp field
+	// If neither exists, return empty string
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		context := claims["context"].(map[string]interface{})
-		user := context["user"].(map[string]interface{})
-		username := user["name"].(string)
-		username = strings.ReplaceAll(username, "@", "_")
-		return username, nil
-	} else {
-		return "", nil
+		if claims["sub"] != nil {
+			// User token
+			context := claims["context"].(map[string]interface{})
+			user := context["user"].(map[string]interface{})
+			username := user["name"].(string)
+			username = strings.ReplaceAll(username, "@", "_")
+			return username, nil
+		} else if claims["azp"] != nil {
+			// Client token
+			return claims["azp"].(string), nil
+		}
 	}
+	return "", nil
 }
