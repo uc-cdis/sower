@@ -71,7 +71,7 @@ func getJobByID(jobid string, username string) (*batchv1.Job, error) {
 	if username == "" { // this is needed for StartMonitoringProcess function only
 		labelSelector = fmt.Sprintf("app=%s", "sowerjob")
 	} else {
-		labelSelector = fmt.Sprintf("app=%s,username=%s", "sowerjob", sanitizeLabelValue(username))
+		labelSelector = fmt.Sprintf("app=%s,username=%s", "sowerjob", username)
 	}
 
 	jobs, err := jc.List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
@@ -100,7 +100,7 @@ func getJobStatusByID(jobid string, username string) (*JobInfo, error) {
 func listJobs(jc batchtypev1.JobInterface, username string) []JobInfo {
 	jobs := []JobInfo{}
 
-	labelSelector := fmt.Sprintf("app=%s,username=%s", "sowerjob", sanitizeLabelValue(username))
+	labelSelector := fmt.Sprintf("app=%s,username=%s", "sowerjob", username)
 
 	jobsList, err := jc.List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
@@ -160,8 +160,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	var ttl int32 = 3600 // Keep job pods for 1 hour by default
 	labels := make(map[string]string)
 	labels["app"] = "sowerjob"
-	safeUsername := sanitizeLabelValue(username)
-	labels["username"] = safeUsername
+	labels["username"] = username
 	if len(conf.Container.Labels) != 0 {
 		for k, v := range conf.Container.Labels {
 			labels[k] = v
@@ -170,8 +169,6 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 
 	annotations := make(map[string]string)
 	annotations["gen3username"] = userName
-	// Preserve the original (unsanitized) principal for audit/debug:
-    annotations["gen3.original-username"] = username
 
 	var privileged = false
 

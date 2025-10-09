@@ -26,6 +26,11 @@ type InputRequest struct {
 	Format string                 `json:"access_format"`
 }
 
+type Principal struct {
+    Raw       string // original, e.g., "auth0|67ec..."
+    LabelSafe string // sanitized for k8s label value
+}
+
 func dispatch(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Dispatch")
 	if r.Method != "POST" {
@@ -68,12 +73,13 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email, err := getEmailFromToken(accessTokenVal)
+	principal, err := getPrincipalFromToken(accessTokenVal)
 	if err != nil {
 		panic(err)
 	}
 
-	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName, email)
+	// pass both raw and safe; createK8sJob will still defensively sanitize at label write
+	result, err := createK8sJob(currentAction, string(out), accessFormat, accessTokenVal, userName, principal.LabelSafe)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -228,11 +234,13 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 			context := claims["context"].(map[string]interface{})
 			user := context["user"].(map[string]interface{})
 			username := user["name"].(string)
-			username = strings.ReplaceAll(username, "@", "_")
-			return username, nil
+            // This field was previously called "email" or "username"; it’s really a principal ID.
+            raw := user["name"].(string) // often email-ish or provider-prefixed ID
+            return Principal{Raw: raw, LabelSafe: sanitizeLabelValue(raw)}, nil
 		} else if claims["azp"] != nil {
 			// Client token
-			return claims["azp"].(string), nil
+            raw := claims["azp"].(string)
+            return Principal{Raw: raw, LabelSafe: sanitizeLabelValue(raw)}, nil
 		}
 	}
 	return "", nil
