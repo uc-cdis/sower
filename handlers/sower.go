@@ -94,28 +94,35 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
-	email := ""
+    UID := r.URL.Query().Get("UID")
+    if UID != "" {
+        username := ""
+        if bt := getBearerToken(r); bt != nil && *bt != "" {
+            if p, err := getPrincipalFromToken(*bt); err == nil {
+                username = p.LabelSafe
+            }
+        }
 
-	UID := r.URL.Query().Get("UID")
-	if UID != "" {
-		result, errUID := getJobStatusByID(UID, email)
-		if errUID != nil {
-			http.Error(w, errUID.Error(), 500)
-			return
-		}
+        result, errUID := getJobStatusByID(UID, sanitizeLabelValue(username))
+        if errUID != nil {
+            http.Error(w, errUID.Error(), 500)
+            return
+        }
 
-		out, err := json.Marshal(result)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
+        out, err := json.Marshal(result)
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
 
-		fmt.Fprint(w, string(out))
-	} else {
-		http.Error(w, "Missing UID argument", 300)
-		return
-	}
+        fmt.Fprint(w, string(out))
+    } else {
+        http.Error(w, "Missing UID argument", 400)
+        return
+    }
 }
+
+
 
 func output(w http.ResponseWriter, r *http.Request) {
 	accessToken := getBearerToken(r)
@@ -125,14 +132,14 @@ func output(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email, err := getEmailFromToken(accessTokenVal)
+	principal, err := getPrincipalFromToken(accessTokenVal)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	UID := r.URL.Query().Get("UID")
 	if UID != "" {
-		result, errUID := getJobLogs(UID, email)
+		result, errUID := getJobLogs(UID, principal.LabelSafe)
 		if errUID != nil {
 			http.Error(w, errUID.Error(), 500)
 			return
@@ -179,12 +186,12 @@ func list(w http.ResponseWriter, r *http.Request) {
 		accessTokenVal = *accessToken
 	}
 
-	email, err := getEmailFromToken(accessTokenVal)
+	principal, err := getPrincipalFromToken(accessTokenVal)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	result := listJobs(getJobClient(), email)
+	result := listJobs(getJobClient(), principal.LabelSafe)
 
 	out, err := json.Marshal(result)
 	if err != nil {
@@ -207,20 +214,20 @@ func getBearerToken(r *http.Request) *string {
 	return nil
 }
 
-func getEmailFromToken(accessTokenVal string) (string, error) {
+func getPrincipalFromToken(accessTokenVal string) (Principal, error) {
 	jwksURL := "http://fence-service/.well-known/jwks"
 
 	// create the JWKS from the resource at the given URL
 	jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{})
 	if err != nil {
 		log.Debugf("Failed to create JWKS from resource at the given URL.\nError: %s", err.Error())
-		return "", err
+		return Principal{}, err
 	}
 
 	token, err := jwt.Parse(accessTokenVal, jwks.Keyfunc)
 	if err != nil {
 		log.Debugf("Failed to parse the JWT.\nError: %s", err.Error())
-		return "", err
+		return Principal{}, err
 	}
 
 	// Verify if sub field exists, to identify if it is a user token or a client token
@@ -233,9 +240,9 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
 			// User token
 			context := claims["context"].(map[string]interface{})
 			user := context["user"].(map[string]interface{})
-			username := user["name"].(string)
             // This field was previously called "email" or "username"; it’s really a principal ID.
             raw := user["name"].(string) // often email-ish or provider-prefixed ID
+			raw = strings.ReplaceAll(raw, "@", "_")
             return Principal{Raw: raw, LabelSafe: sanitizeLabelValue(raw)}, nil
 		} else if claims["azp"] != nil {
 			// Client token
@@ -243,5 +250,5 @@ func getEmailFromToken(accessTokenVal string) (string, error) {
             return Principal{Raw: raw, LabelSafe: sanitizeLabelValue(raw)}, nil
 		}
 	}
-	return "", nil
+	return Principal{}, nil
 }
