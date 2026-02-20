@@ -2,6 +2,7 @@ module github.com/uc-cdis/sower
 
 go 1.26
 
+toolchain go1.26
 require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/apex/log v1.9.0
