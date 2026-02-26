@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/apex/log"
 	"github.com/uc-cdis/sower/handlers/version"
 )
 
@@ -19,7 +20,9 @@ func RegisterSystem() {
 }
 
 func systemStatus(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Healthy")
+	if _, err := fmt.Fprint(w, "Healthy"); err != nil {
+		log.WithError(err).Error("failed to write systemStatus response")
+	}
 }
 
 func systemVersion(w http.ResponseWriter, r *http.Request) {
@@ -30,5 +33,7 @@ func systemVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, string(out))
+	if _, err := fmt.Fprint(w, string(out)); err != nil {
+		log.WithError(err).Error("failed to write systemVersion response")
+	}
 }

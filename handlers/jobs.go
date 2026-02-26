@@ -196,7 +196,7 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 
 	// For an example of how to create jobs, see this file:
 	// https://github.com/pachyderm/pachyderm/blob/805e63/src/server/pps/server/api_server.go#L2320-L2345
-	var batchJob *batchv1.Job = &batchv1.Job{
+	var batchJob = &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
 			APIVersion: "v1",
@@ -213,8 +213,8 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 			// Optional: TTLSecondsAfterFinished:,
 			// Optional: Selector:,
 			// Optional: ManualSelector:,
-			BackoffLimit:          &backoff,
-			ActiveDeadlineSeconds: &deadline,
+			BackoffLimit:            &backoff,
+			ActiveDeadlineSeconds:   &deadline,
 			TTLSecondsAfterFinished: &ttl,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -253,17 +253,17 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 	}
 
 	if conf.ServiceAccountName != nil {
-		var saName string = *conf.ServiceAccountName
+		var saName = *conf.ServiceAccountName
 		batchJob.Spec.Template.Spec.ServiceAccountName = saName
 	}
 
 	if conf.ActiveDeadlineSeconds != nil {
-		var deadline int64 = *conf.ActiveDeadlineSeconds
+		var deadline = *conf.ActiveDeadlineSeconds
 		batchJob.Spec.ActiveDeadlineSeconds = &deadline
 	}
 
 	if conf.TTLSecondsAfterFinished != nil {
-		var ttl int32 = *conf.TTLSecondsAfterFinished
+		var ttl = *conf.TTLSecondsAfterFinished
 		batchJob.Spec.TTLSecondsAfterFinished = &ttl
 	}
 
@@ -311,7 +311,7 @@ func getJobLogs(jobid string, username string) (*JobOutput, error) {
 
 	pod := getPodMatchingJob(job.Name)
 	if pod == nil {
-		return nil, fmt.Errorf("Pod not found")
+		return nil, fmt.Errorf("pod not found")
 	}
 
 	// creates the in-cluster config
@@ -330,12 +330,16 @@ func getJobLogs(jobid string, username string) (*JobOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer podLogs.Close()
+	defer func() {
+		if err := podLogs.Close(); err != nil {
+			log.WithError(err).Error("failed to close request body")
+		}
+	}()
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
-		return nil, fmt.Errorf("Error copying output")
+		return nil, fmt.Errorf("error copying output")
 	}
 	str := html.UnescapeString(buf.String())
 	fmt.Println(str)
