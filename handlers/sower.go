@@ -36,7 +36,11 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	accessToken := getBearerToken(r)
 
 	inputDataStr, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			log.WithError(err).Error("failed to close request body")
+		}
+	}()
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -50,7 +54,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	var currentAction = inputRequest.Action
 
-	var accessFormat string = "presigned_url"
+	var accessFormat = "presigned_url"
 
 	if inputRequest.Format != "" {
 		accessFormat = inputRequest.Format
@@ -84,7 +88,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, string(out))
+	if _, err := fmt.Fprint(w, string(out)); err != nil {
+		log.WithError(err).Error("failed to write response")
+	}
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
@@ -104,9 +110,12 @@ func status(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprint(w, string(out))
+		if _, err := fmt.Fprint(w, string(out)); err != nil {
+			log.WithError(err).Error("failed to write response")
+		}
+
 	} else {
-		http.Error(w, "Missing UID argument", 300)
+		http.Error(w, "Missing UID argument", http.StatusMultipleChoices)
 		return
 	}
 }
@@ -145,7 +154,7 @@ func output(w http.ResponseWriter, r *http.Request) {
 		logLines := strings.FieldsFunc(result.Output, newLineSep)
 		for _, logLine := range logLines {
 			if strings.Contains(logLine, "[out] ") {
-				resLine = strings.Replace(logLine, "[out] ", "", -1)
+				resLine = strings.ReplaceAll(logLine, "[out] ", "")
 			}
 		}
 
@@ -158,9 +167,12 @@ func output(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprint(w, string(res))
+		if _, err := fmt.Fprint(w, string(res)); err != nil {
+			log.WithError(err).Error("failed to write response")
+		}
+
 	} else {
-		http.Error(w, "Missing UID argument", 300)
+		http.Error(w, "Missing UID argument", http.StatusMultipleChoices)
 		return
 	}
 }
@@ -186,7 +198,9 @@ func list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, string(out))
+	if _, err := fmt.Fprint(w, string(out)); err != nil {
+		log.WithError(err).Error("failed to write response")
+	}
 }
 
 func getBearerToken(r *http.Request) *string {
