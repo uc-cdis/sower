@@ -2,7 +2,7 @@ module github.com/uc-cdis/sower
 
 go 1.26
 
-toolchain go1.26.0
+toolchain go1.26.1
 
 require (
 	github.com/MicahParks/keyfunc v1.9.0
