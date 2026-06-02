@@ -6,9 +6,9 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/apex/log v1.9.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
-	k8s.io/api v0.36.0
-	k8s.io/apimachinery v0.36.0
-	k8s.io/client-go v0.36.0
+	k8s.io/api v0.36.1
+	k8s.io/apimachinery v0.36.1
+	k8s.io/client-go v0.36.1
 )
 
 require (
