@@ -10,14 +10,16 @@ import (
 
 // Container Struct to hold the configuration for Job Container
 type Container struct {
-	Name          string              `json:"name"`
-	Image         string              `json:"image"`
-	PullPolicy    k8sv1.PullPolicy    `json:"pull_policy"`
-	Env           []k8sv1.EnvVar      `json:"env"`
-	VolumesMounts []k8sv1.VolumeMount `json:"volumeMounts"`
-	Labels        map[string]string   `json:"labels"`
-	CPULimit      string              `json:"cpu-limit"`
-	MemoryLimit   string              `json:"memory-limit"`
+	Name              string              `json:"name"`
+	Image             string              `json:"image"`
+	PullPolicy        k8sv1.PullPolicy    `json:"pull_policy"`
+	Env               []k8sv1.EnvVar      `json:"env"`
+	VolumesMounts     []k8sv1.VolumeMount `json:"volumeMounts"`
+	Labels            map[string]string   `json:"labels"`
+	Annotations       map[string]string   `json:"annotations"`
+	PriorityClassName string              `json:"priorityClassName"`
+	CPULimit          string              `json:"cpu-limit"`
+	MemoryLimit       string              `json:"memory-limit"`
 }
 
 // SowerConfig Struct to hold all the configuration
