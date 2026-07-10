@@ -167,7 +167,12 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 		}
 	}
 
-	annotations := make(map[string]string)
+	annotations := make(map[string]string, len(conf.Container.Annotations)+1)
+
+	for k, v := range conf.Container.Annotations {
+		annotations[k] = v
+	}
+
 	annotations["gen3username"] = userName
 
 	var privileged = false
@@ -218,10 +223,12 @@ func createK8sJob(currentAction string, inputData string, accessFormat string, a
 			TTLSecondsAfterFinished: &ttl,
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   name,
-					Labels: labels,
+					Name:        name,
+					Labels:      labels,
+					Annotations: annotations,
 				},
 				Spec: k8sv1.PodSpec{
+					PriorityClassName: conf.Container.PriorityClassName,
 					Containers: []k8sv1.Container{
 						{
 							Name:  conf.Container.Name,
